@@ -4,7 +4,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Sequence
 
-from .errors import CalcGuardError, fail
+from .errors import fail
 
 
 def assert_signed(actual: float, expected: float, rel: float = 1e-9,
