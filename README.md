@@ -27,3 +27,11 @@ against an external reference, reconciling sign convention and units.
 `assert_equilibrium`. It catches three of the six on its own, because
 neither a sign error nor a stale length nor a force at the wrong end can
 satisfy it.
+
+One caveat worth knowing before you write a minimal adapter: that power sits
+almost entirely in the PER-MEMBER axial check, not the global force sum.
+Global reactions balance whether or not the axial is placed at the wrong end —
+measured, on the very cantilever that exposed the defect. An adapter that
+exposes only `applied_loads` and `reactions` gives you a guard that looks the
+same and catches far less. Implement `member_end_forces`, `member_geometry`
+and `member_transverse_load` too.
