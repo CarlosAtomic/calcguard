@@ -54,3 +54,30 @@ def test_bounded_both_sides_rejects_a_value_that_is_too_large():
 
 def test_bounded_both_sides_accepts_a_value_inside():
     assert_bounded_both_sides(1.0, lo=0.5, hi=1.5, what="residual")
+
+
+from calcguard.tier1 import assert_monotonic, assert_scales
+
+
+def test_scales_passes_for_a_linear_response():
+    assert_scales(lambda w: 5.0 * w, x=2.0, factor=2.0, power=1)
+
+
+def test_scales_passes_for_a_quadratic_response():
+    """Moment goes as L^2, so doubling the span must quadruple it."""
+    assert_scales(lambda L: 0.01 * L ** 2 / 8, x=60.0, factor=2.0, power=2)
+
+
+def test_scales_catches_a_response_that_ignores_its_input():
+    """A stale cached length looks exactly like this: the answer does not move."""
+    with pytest.raises(CalcGuardError):
+        assert_scales(lambda L: 42.0, x=60.0, factor=2.0, power=2)
+
+
+def test_monotonic_catches_a_response_that_goes_the_wrong_way():
+    with pytest.raises(CalcGuardError):
+        assert_monotonic(lambda w: -w, xs=[1.0, 2.0, 3.0], direction="increasing")
+
+
+def test_monotonic_passes_when_more_load_means_more_demand():
+    assert_monotonic(lambda w: 3.0 * w, xs=[1.0, 2.0, 3.0], direction="increasing")

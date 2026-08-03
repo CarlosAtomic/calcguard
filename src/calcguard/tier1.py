@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable, Sequence
 
 from .errors import CalcGuardError, fail
 
@@ -49,3 +50,31 @@ def assert_bounded_both_sides(value: float, lo: float, hi: float,
     side = "below" if value < lo else "above"
     fail(f"{what} within [{lo}, {hi}]", f"{lo}..{hi}", value,
          f"value falls {side} the band; a value that is too GOOD is also a failure")
+
+
+def assert_scales(fn: Callable[[float], float], x: float, factor: float,
+                  power: int = 1, rel: float = 1e-9) -> None:
+    """Scaling one input by ``factor`` must scale the output by ``factor**power``.
+
+    Catches a whole class of error in which a computation silently ignores one
+    of its inputs -- a cached or stale length being the case that motivated
+    this. A function that returns a constant fails immediately.
+    """
+    base = fn(x)
+    scaled = fn(x * factor)
+    expected = base * factor ** power
+    if math.isclose(scaled, expected, rel_tol=rel, abs_tol=1e-15):
+        return
+    fail(f"scaling by {factor} to the power {power}", expected, scaled,
+         f"f({x}) = {base}; f({x * factor}) = {scaled}. A result that does not "
+         f"move with its input usually means the input is not being read.")
+
+
+def assert_monotonic(fn: Callable[[float], float], xs: Sequence[float],
+                     direction: str = "increasing") -> None:
+    """Demand must not fall when load rises (or vice versa)."""
+    ys = [fn(x) for x in xs]
+    for a, b in zip(ys, ys[1:]):
+        ok = b >= a if direction == "increasing" else b <= a
+        if not ok:
+            fail(f"monotonic {direction}", f"{direction} sequence", ys)
