@@ -78,3 +78,36 @@ def assert_monotonic(fn: Callable[[float], float], xs: Sequence[float],
         ok = b >= a if direction == "increasing" else b <= a
         if not ok:
             fail(f"monotonic {direction}", f"{direction} sequence", ys)
+
+
+def assert_coverage(built: int, total: int, floor: float = 0.5,
+                    what: str = "cases") -> None:
+    """Assert that enough of a sweep actually RAN.
+
+    A generator that refuses its inputs produces a skip, and a skip reads
+    exactly like a pass in a green test run. Measured on a real sweep: 2 of 10
+    cases built, 8 refused silently, suite green.
+    """
+    if total == 0:
+        fail(f"{what} coverage", "at least one case", "no cases at all")
+    frac = built / total
+    if frac >= floor:
+        return
+    fail(f"{what} coverage", f">= {floor:.0%}", f"{frac:.0%} ({built}/{total})",
+         "the rest were skipped or refused, and a skip reads exactly like a pass")
+
+
+def assert_schema_matches_capability(declared: set, supported: set,
+                                     what: str = "capability") -> None:
+    """What a program ADVERTISES must equal what it can honour, both ways.
+
+    A knob offering a value that is always refused is a defect the user meets
+    and the tests never do. A capability with no knob is one nobody can reach.
+    """
+    phantom = declared - supported
+    unreachable = supported - declared
+    if not phantom and not unreachable:
+        return
+    fail(f"{what} schema/capability parity", sorted(supported), sorted(declared),
+         f"advertised but unusable: {sorted(phantom)}; "
+         f"available but unreachable: {sorted(unreachable)}")

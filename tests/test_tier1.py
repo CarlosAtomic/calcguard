@@ -81,3 +81,36 @@ def test_monotonic_catches_a_response_that_goes_the_wrong_way():
 
 def test_monotonic_passes_when_more_load_means_more_demand():
     assert_monotonic(lambda w: 3.0 * w, xs=[1.0, 2.0, 3.0], direction="increasing")
+
+
+from calcguard.tier1 import assert_coverage, assert_schema_matches_capability
+
+
+def test_coverage_fails_when_most_cases_were_skipped():
+    """A skipped case is not a passing case, and the two look identical in a
+    green test run."""
+    with pytest.raises(CalcGuardError) as e:
+        assert_coverage(built=2, total=10, floor=0.5, what="parameter sweep")
+    assert "skip" in str(e.value).lower() or "built" in str(e.value).lower()
+
+
+def test_coverage_passes_when_enough_cases_actually_ran():
+    assert_coverage(built=9, total=10, floor=0.5, what="parameter sweep")
+
+
+def test_schema_fails_when_a_knob_cannot_be_honoured():
+    with pytest.raises(CalcGuardError) as e:
+        assert_schema_matches_capability(declared={"a", "b"}, supported={"a"},
+                                         what="overhang")
+    assert "b" in str(e.value)
+
+
+def test_schema_fails_when_a_capability_has_no_knob():
+    """The other direction: geometry exists that the user cannot reach."""
+    with pytest.raises(CalcGuardError):
+        assert_schema_matches_capability(declared={"a"}, supported={"a", "b"},
+                                         what="overhang")
+
+
+def test_schema_passes_when_the_two_agree():
+    assert_schema_matches_capability(declared={"a"}, supported={"a"}, what="overhang")
