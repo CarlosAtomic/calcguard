@@ -1,0 +1,16 @@
+[project]
+name = "calcguard"
+version = "0.1.0"
+description = "Executable physics assertions for engineering calculation programs"
+requires-python = ">=3.12"
+dependencies = ["numpy>=1.24"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
