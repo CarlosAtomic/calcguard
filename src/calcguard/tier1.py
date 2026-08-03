@@ -22,3 +22,30 @@ def assert_signed(actual: float, expected: float, rel: float = 1e-9,
     detail = ("the MAGNITUDES agree and only the SIGN differs -- an abs() "
               "comparison would have passed this" if same_magnitude else "")
     fail(f"signed {what}", expected, actual, detail)
+
+
+def assert_matches_closed_form(actual: float, expected: float, cite: str,
+                               rel: float = 1e-9) -> None:
+    """Check against a hand-derivable result, naming the formula.
+
+    ``cite`` is required, not optional: a closed-form check whose formula is not
+    recorded cannot be audited later, and this package exists to be auditable.
+    """
+    if math.isclose(actual, expected, rel_tol=rel, abs_tol=1e-15):
+        return
+    fail(f"closed form {cite}", expected, actual)
+
+
+def assert_bounded_both_sides(value: float, lo: float, hi: float,
+                              what: str = "value") -> None:
+    """Pin a quantity from BELOW as well as above.
+
+    ``assert error <= budget`` is satisfied for free by any bug that drives the
+    error to zero -- for instance by reporting no force at all. Requiring a
+    lower bound turns 'suspiciously good' into a failure.
+    """
+    if lo <= value <= hi:
+        return
+    side = "below" if value < lo else "above"
+    fail(f"{what} within [{lo}, {hi}]", f"{lo}..{hi}", value,
+         f"value falls {side} the band; a value that is too GOOD is also a failure")
