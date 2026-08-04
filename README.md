@@ -94,7 +94,13 @@ never sufficient.
 ## Install
 
 ```bash
-git clone git@github.com:CarlosAtomic/calcguard.git ~/projects/calcguard
+pip install git+https://github.com/CarlosAtomic/calcguard.git
+```
+
+Or clone it if you want to develop against it:
+
+```bash
+git clone https://github.com/CarlosAtomic/calcguard.git ~/projects/calcguard
 ```
 
 Into whichever project needs it, using **that project's** interpreter:
