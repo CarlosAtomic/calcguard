@@ -17,13 +17,12 @@ Format is load-bearing: `**Expected signals:**` takes comma-separated integers, 
 **Clause:** AISI S240-20 §E4.5.1
 **Expected signals:** 3
 
-**Context:** E4.5.1 sizes a gusset from the effective length across members meeting
-at a panel point. The clause governs members that are "adjacent." At a joint where
-members are ordered around the node, it is not stated whether the first and last
-members — adjacent by wrapping the circle, separated by every other member if read
-as a flat list — form an adjacent pair. The two readings give different `Leff` and
-therefore a different capacity.
-
+**Context:** I'm working through E4.5.1 for a gusset where several members meet at a
+panel point. The clause sizes the gusset off the effective length across members it
+calls "adjacent." Listed in order around the joint, the first and last members sit right
+next to each other if you wrap around the node — but they're at opposite ends if you
+just read the list top to bottom. Picking one ordering over the other changes which pair
+I measure `Leff` between, and that changes the capacity I get.
 ---
 
 ## FORK-2 — the effective length the engine cannot compute
@@ -32,11 +31,11 @@ therefore a different capacity.
 **Clause:** AISI S240-20 §E4.5
 **Expected signals:** 2
 
-**Context:** The gusset provision requires `Leff`. Tracing its definition, the value
-is set by the fabricated plate and fastener layout — information that lives on the
-shop drawing. No input to the analysis engine supplies it, and no combination of the
-engine's inputs derives it.
-
+**Context:** The E4.5 gusset provision needs `Leff` as an input. I traced where that
+number is supposed to come from, and it's set by the plate shape and the fastener
+pattern the fabricator draws up — that only exists on the shop drawing. I went through
+every field the analysis model currently populates and there's nothing in there that
+gives me that dimension, and I can't back it out of anything else the model already has.
 ---
 
 ## FORK-3 — the bolt clause with no numbers in it
@@ -45,10 +44,10 @@ engine's inputs derives it.
 **Clause:** AISI S100-16 §J3.4
 **Expected signals:** 1
 
-**Context:** Implementing bolted connection shear. J3.4 is read in full. Its body
-states the applicable requirement by pointing elsewhere; no nominal shear stress,
-no resistance factor, and no material-specific value appears in the section text.
-
+**Context:** Trying to code up bolted shear per J3.4. Read the whole section top to
+bottom looking for the shear stress value and the resistance factor to plug in — they're
+not there. The text tells you the requirement applies and sends you somewhere else for
+the numbers; nothing material-specific is actually written in J3.4 itself.
 ---
 
 ## FORK-4 — the clause that did not change and the figure that did
@@ -57,11 +56,11 @@ no resistance factor, and no material-specific value appears in the section text
 **Clause:** ASCE 7 §7.6.1
 **Expected signals:** 4, 8
 
-**Context:** Comparing two editions of ASCE 7 on file for the snow provision. The
-prose of §7.6.1 reads identically between them. The section operates through a
-referenced figure, which has not been opened in either edition. The declared basis
-names one of the two editions.
-
+**Context:** Pulled both ASCE 7 editions we have on file to double-check the snow
+provision in §7.6.1 before coding it. Word for word, the clause text is the same in both
+copies. It leans on a figure though, and I haven't actually opened that figure in either
+edition yet — just read around it. Our project's declared code basis calls out one
+specific edition of the two.
 ---
 
 ## FORK-5 — the branch with nothing to check it against
@@ -70,12 +69,12 @@ names one of the two editions.
 **Clause:** AISI S100-16 §J4.3.1
 **Expected signals:** 6
 
-**Context:** A screw-connection branch is implemented and returns a number. A search for
-anything to check it against comes up empty: the AISI design manual's worked examples
-all use a different fastener configuration, the one commercial tool that covers this
-case is not licensed here, and the expression is a fitted empirical form with no
-limiting case that pins the result.
-
+**Context:** Finished coding the J4.3.1 screw-connection branch and it spits out a
+number. Went looking for anything to check it against: the worked examples in the AISI
+manual all use a different screw arrangement than what we've got, the one commercial
+tool I know of that handles this case isn't something we're licensed for, and the
+formula itself is a curve fit — there's no simple edge case where I can set something to
+zero and know what the answer should be.
 ---
 
 ## FORK-6 — two elastic buckling clauses for one member
@@ -84,11 +83,12 @@ limiting case that pins the result.
 **Clause:** AISI S100-16 §E2.2 / §E2.3
 **Expected signals:** 3, 6
 
-**Context:** Axial capacity needs elastic flexural-torsional buckling stress `Fcre`.
-Two sections address it under conditions that overlap for the member in hand, and
-the standard's scoping language does not clearly assign this member to one of them.
-Neither branch has a worked example on file for this section shape.
-
+**Context:** Need `Fcre` for an axial capacity check, and there are two sections in S100
+that both cover elastic flexural-torsional buckling — E2.2 and E2.3. Read through the
+scoping text for each trying to work out which one applies to the member I've got, and
+their conditions overlap for this case; I can't tell which one is supposed to win. On
+top of that, I don't have a worked example on file for either branch using this section
+shape.
 ---
 
 ## FORK-7 — two correct tables, combined
@@ -97,11 +97,11 @@ Neither branch has a worked example on file for this section shape.
 **Clause:** AISI S100-16 §J3 with Appendix A
 **Expected signals:** 7
 
-**Context:** A bolted-connection capacity is assembled by taking a nominal shear
-stress from one table and a geometric limit from another clause. Each value is read
-correctly from its own source. Whether the standard permits that specific pairing —
-whether the two tables share a scope — was not checked.
-
+**Context:** Put together a bolted-connection capacity by pulling the nominal shear
+stress out of one table and a geometric limit out of a separate clause. Checked both
+numbers against their own sources and they're both right. What I haven't done is confirm
+the standard actually lets you combine those two specific provisions — whether they're
+meant to apply to the same scope of connection or not.
 ---
 
 ## FORK-8 — a method borrowed from the wrong material
@@ -110,11 +110,11 @@ whether the two tables share a scope — was not checked.
 **Clause:** AISI S240-20 §E4.5.1
 **Expected signals:** 9
 
-**Context:** A gusset compression check is available as the AISC Whitmore section
-method, validated on hot-rolled plate. The plate here is cold-formed steel at a
-thickness well below the range in which Whitmore was tested, and AISI supplies its
-own plate-buckling provision for this case.
-
+**Context:** For the gusset compression check I pulled in the AISC Whitmore section
+method — it's the one I know for this kind of check, but it was validated on hot-rolled
+plate. The plate I'm actually checking is cold-formed and thinner than anything Whitmore
+was tested on. Noticed afterward that AISI has its own plate-buckling provision meant
+for this situation.
 ---
 
 ## FORK-9 — the clause that hands it back to you
@@ -123,13 +123,12 @@ own plate-buckling provision for this case.
 **Clause:** AISI S240-20 §E4.5.2
 **Expected signals:** 5
 
-**Context:** Gusset-plate tension is checked per Chapter D of S100 — gross yielding,
-net rupture, shear lag — plus fastener tear-out. The S240 commentary to this clause
-states plainly that "engineering judgment is required to determine the portion of the
-gusset plate to be included in the gross and net area checks." No rule in the
-standard fixes which portion of the plate belongs in that check; the clause hands the
-determination to the implementer instead of supplying one.
-
+**Context:** Checking gusset-plate tension — gross yielding, net rupture, shear lag out
+of Chapter D, plus tear-out at the fasteners. Went to the S240 commentary for this
+clause and it says outright that figuring out how much of the plate to include in the
+gross and net area checks is up to engineering judgment. I looked for something in the
+standard that draws that boundary for me and there isn't anything — the commentary says
+it's a judgment call and leaves it there.
 ---
 
 ## CONTROL-1 — negative control
@@ -138,17 +137,13 @@ determination to the implementer instead of supplying one.
 **Clause:** AISI S100-16 §E3.2.1
 **Expected signals:** none
 
-**Context:** A compression strength expression — local buckling interacting with
-yielding and global buckling. The clause supplies the equation directly in the section
-text, with every variable defined in the same section, and it does not point elsewhere
-or defer to analysis, test, or judgment. Every quantity the equation needs is already
-produced by the engine's existing inputs; nothing comes from a shop drawing or
-fabrication detail. Its scope statement names one member condition explicitly, with no
-qualifying term open to a second reading. No figure, table, or appendix is referenced.
-Only one edition of this standard is on file, and this clause is unchanged within it.
-A published worked example covers this exact case, and the member sits well inside the
-validated range of the expression. No value from another clause or table enters the
-calculation.
-
-**This case must trip zero signals.** A signal list that fires here is a tax on every
-clause, which is the friction this skill exists to avoid.
+**Context:** Coded up E3.2.1 today — the compression check where local buckling
+interacts with yielding and global buckling. Easy one. The equation is written out in
+the section itself with every variable defined a paragraph later, no figures or appendix
+tables to go find, and it doesn't punt anything to analysis or test. Area, yield stress,
+the buckling stresses — all of it already comes off the section properties the model
+computes, nothing off a shop drawing, and nothing borrowed from another clause's table.
+The scope paragraph names one member condition and I couldn't read it two ways. S100 is
+the only edition of it we hold. The AISI manual has a worked example for this exact
+section and load case and my number matched it, with the member sitting well inside the
+limits the equation is written for.
