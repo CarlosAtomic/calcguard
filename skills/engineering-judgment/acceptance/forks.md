@@ -147,3 +147,60 @@ The scope paragraph names one member condition and I couldn't read it two ways. 
 the only edition of it we hold. The AISI manual has a worked example for this exact
 section and load case and my number matched it, with the member sitting well inside the
 limits the equation is written for.
+
+**This case must trip zero signals.** A signal list that fires here is a tax on every
+clause, which is the friction this skill exists to avoid.
+
+---
+
+## Replay log
+
+| Date | FORK cases scored | Passed | Control | Notes |
+|---|---|---|---|---|
+| 2026-08-15 | 6 of 9 | 6 of 6 | **clean (`[]`)** | 3 unscored — harness, not content |
+
+Conditions: fresh agent per case, cases relabelled and shuffled, case id and case count
+withheld, existence of a control withheld, **Receipt column withheld**, notes sanitised
+of clause numbers, filesystem access forbidden.
+
+| Case | Expected | Returned | |
+|---|---|---|---|
+| FORK-1 | 3 | `[3]` | pass |
+| FORK-3 | 1 | `[1,4]` | pass, over-fires 4 |
+| FORK-5 | 6 | `[6]` | pass |
+| FORK-6 | 3, 6 | `[3,6]` | pass |
+| FORK-7 | 7 | `[7]` | pass |
+| FORK-9 | 5 | `[5,6]` | pass, over-fires 6 |
+| FORK-2 | 2 | — | **unscored** |
+| FORK-4 | 4, 8 | — | **unscored** |
+| FORK-8 | 9 | — | **unscored** |
+| CONTROL-1 | none | `[]` | pass |
+
+**FORK-2, FORK-4 and FORK-8 are unscored.** Five dispatches across two models returned
+no final message for these three specific cases while the other seven answered
+normally. That is a dispatch failure, not a fixture defect — nothing was scored and
+failed. Recorded as unscored rather than assumed to pass.
+
+Consequence, stated plainly: **signals 2, 4, 8 and 9 have no replay evidence.** Signal
+8 is the notable gap. It was narrowed on 2026-08-15 after review found the broad form
+would fire on nearly every clause, and FORK-4 is its only fixture, so that narrowing
+is unverified.
+
+Two over-fires, both defensible rather than sloppy:
+
+- **FORK-3 also returned 4.** "The clause sends you elsewhere for the numbers, and I
+  have not gone there" reads as both a cross-reference body and an unopened artifact.
+  Signals 1 and 4 genuinely overlap whenever the cross-reference target is still
+  unread — a seam in the list, found by replay rather than by inspection.
+- **FORK-9 also returned 6.** "Nothing in the standard draws that boundary" was read as
+  an absent oracle, though the context never mentions worked examples, tools, or closed
+  forms.
+
+Neither breaks "at least" scoring. Both are worth watching: over-firing on FORK cases
+is the leading indicator of the tax, and what would make it dangerous is the control
+firing. The control is clean.
+
+**The fixtures were rewritten before this run** (`49048d8`). An earlier scoring pass
+reached 10 of 10 by phrase-matching the signal table's own wording, which proved
+nothing. These results come from contexts that no longer share vocabulary with the
+signals.
