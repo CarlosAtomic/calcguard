@@ -1158,15 +1158,33 @@ fresh so it cannot see the expected answer — with this prompt, substituting th
 Context verbatim:
 
 ```
-Read skills/engineering-judgment/references/fork-signals.md.
+Below are nine signals that indicate an engineering standard may not
+uniquely determine an answer.
 
-Then scan this clause-implementation situation against the nine signals.
+<paste the signal table's `#`, `Signal` and `How to check` columns ONLY --
+ see the withholding rule below -- plus the "Notes on the ones that
+ mislead" section>
+
+Scan this clause-implementation situation against those nine signals.
 List ONLY the signal numbers that fire, as a JSON array. If none fire,
 return []. Do not explain.
 
 Situation:
 <paste the case's **Context** block verbatim — nothing else>
 ```
+
+**Withholding rule — the replay is invalid without it.** Do NOT tell the agent to
+read `fork-signals.md`, and do NOT include the **Receipt** column. Each receipt names
+the very clause its fixture describes — signal 1's receipt is `J3.4 → Appendix A` and
+FORK-3's Context names J3.4; signal 9's is `Whitmore on CFS plate` and FORK-8's Context
+names Whitmore. Handed the full table, an agent scores by matching clause strings
+rather than by reading the situation, and the suite passes for the wrong reason.
+
+The receipts stay in the file — they are why each signal exists — but they are
+documentation for the implementer, not part of the detection procedure.
+
+Also withhold: the case id, how many cases exist, and that a negative control is among
+them. Dispatch the cases in a shuffled order.
 
 - [ ] **Step 2: Score**
 
