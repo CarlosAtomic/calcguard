@@ -70,10 +70,11 @@ names one of the two editions.
 **Clause:** AISI S100-16 §J4.3.1
 **Expected signals:** 6
 
-**Context:** A screw-connection branch is implemented and returns a number. Searching
-for something to check it against: no published worked example covers this
-configuration, no licensed independent tool is available for it, and the expression
-has no closed form or limiting case that constrains the result.
+**Context:** A screw-connection branch is implemented and returns a number. A search for
+anything to check it against comes up empty: the AISI design manual's worked examples
+all use a different fastener configuration, the one commercial tool that covers this
+case is not licensed here, and the expression is a fitted empirical form with no
+limiting case that pins the result.
 
 ---
 
@@ -137,10 +138,17 @@ determination to the implementer instead of supplying one.
 **Clause:** AISI S100-16 §E3.2.1
 **Expected signals:** none
 
-**Context:** A flexural strength expression. The clause gives the equation inline
-with every variable defined in the same section, the declared basis names exactly
-one edition, no figure or appendix is referenced, a published worked example covers
-this case, and no value from another table enters the calculation.
+**Context:** A compression strength expression — local buckling interacting with
+yielding and global buckling. The clause supplies the equation directly in the section
+text, with every variable defined in the same section, and it does not point elsewhere
+or defer to analysis, test, or judgment. Every quantity the equation needs is already
+produced by the engine's existing inputs; nothing comes from a shop drawing or
+fabrication detail. Its scope statement names one member condition explicitly, with no
+qualifying term open to a second reading. No figure, table, or appendix is referenced.
+Only one edition of this standard is on file, and this clause is unchanged within it.
+A published worked example covers this exact case, and the member sits well inside the
+validated range of the expression. No value from another clause or table enters the
+calculation.
 
 **This case must trip zero signals.** A signal list that fires here is a tax on every
 clause, which is the friction this skill exists to avoid.
