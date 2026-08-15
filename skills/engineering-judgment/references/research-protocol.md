@@ -28,11 +28,50 @@ and its path on stderr.
 ~/bin/vault-search "distortional buckling" --material CFS --json
 ```
 
-**3. The contents.** Merged RAG answer plus on-file catalog citations.
+**2b. The clause text itself.** Once a section search names the document, read the
+clause out of the PDF. This is the authority; everything below it is commentary.
+
+```bash
+pdftotext -layout "/home/atomicjr/Vault/CS_Codes_and_Standards/<file>.pdf" - \
+  | grep -n -A15 "J4.3.1 Shear Strength"
+```
+
+**Do not use semantic RAG to look up a clause by number.** Measured 2026-08-15:
+`llocal rag cs-codes-and-standards "What does J4.3.1 say about linear
+interpolation?"` returned *"the provided context does not contain any reference to
+section J4.3.1"* and cited **NFPA 13, sprinkler systems** — while the clause sat in
+CS-0125 all along. Section identifiers do not embed; vectors match concepts, not
+numbers. That "not found" is a fact about the instrument, not about the corpus, and
+it reads exactly like a fact about the corpus.
+
+**3. The contents — for CONCEPT questions only, and budget minutes.**
 
 ```bash
 llocal research "AISI S240 gusset effective length"
 ```
+
+Measured 2026-08-15 on a warm stack: **~17 s per workspace**, 16 workspaces, 4 at a
+time (`LLOCAL_RAGALL_CONCURRENCY`) — about 70 s of retrieval, then a merge synthesis
+over up to 16 workspaces' hits. `llocal` prints the warning itself: *"~minutes —
+single 'rag <slug>' is faster."* A 120 s timeout kills it mid-run; so does 300 s.
+
+**Warm the model first.** `qwen3.6` is 23 GB and Ollama evicts it on `keep_alive`
+expiry, so a cold first call pays the load on top of the above. Preload, then query:
+
+```bash
+curl -s http://localhost:11434/api/generate \
+  -d '{"model":"qwen3.6","prompt":"","keep_alive":"30m"}' >/dev/null
+curl -s http://localhost:11434/api/ps      # confirm resident before launching
+```
+
+**Prefer one workspace when you know where it lives** — 17 s instead of minutes:
+
+```bash
+llocal rag cs-codes-and-standards "why does tilting govern in thin ply connections"
+```
+
+**A killed run is not an empty result.** If the command times out, say the research
+leg did not execute. Do not record it as "searched, nothing found."
 
 **4. Prior judgments.** `JR-` records live in the `notes` workspace, **not** the
 catalog. `vault-search` will not find them.
