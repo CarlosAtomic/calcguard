@@ -13,7 +13,7 @@ so they survive an implementer who is confidently wrong. Trust them most.
 | 2 | **Undefined input** | the clause needs a quantity no input to the engine supplies | S240 §E4.5 `Leff` |
 | 3 | **Ambiguous scope** | a term or a scoping statement admits two readings that change the number — a word like "adjacent", "continuous", "supported", "effective", or two clauses whose applicability overlaps for this member | `joint_leff`; E2.2 vs E2.3 |
 | 4 | **Referenced artifact unread** | a figure, table, or appendix is cited and has not been opened | ASCE §7.6.1 figure |
-| 5 | **Determination handed to you** | the clause supplies no rule and defers to the implementer — "by rational analysis", "by test", "engineering judgment is required", "by accepted engineering principles" | S240 §E4.5.2 commentary |
+| 5 | **Determination handed to you** | the clause states who decides instead of what the answer is, deferring to the implementer — "by rational analysis", "by test", "engineering judgment is required", "by accepted engineering principles" | S240 §E4.5.2 commentary |
 | 6 | **No oracle** | no worked example, no independent tool, no closed form for this branch | §7.6.1, J4.3.1 |
 | 7 | **Cross-table pairing** | two limits from different clauses are combined; is the pair legal? | the 1.43× unconservative pair |
 | 8 | **Edition delta on the path** | more than one edition on file bears on this clause — whether or not a difference is yet known | S2-20 vs S3-22 |
