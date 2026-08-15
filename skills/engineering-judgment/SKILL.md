@@ -8,9 +8,9 @@ description: >-
   in hand, a referenced figure or appendix has not been opened, the clause defers
   determination to rational analysis, to test, or to engineering judgment, or otherwise
   states who decides rather than what the answer is, the branch has no worked example or
-  independent tool, two tables from different clauses are being combined, more than one
-  edition on file bears on this clause whether or not a difference is yet known, or a
-  method is applied outside its tested range. Also use for "which reading governs", "what
+  independent tool, two tables from different clauses are being combined, material from
+  an edition other than the declared basis is in play for this clause, or a method is
+  applied outside its tested range. Also use for "which reading governs", "what
   does this clause actually require", "the older edition said this", "is this pairing
   legal", "what's our basis for this", and before choosing between two defensible
   interpretations. Produces a cited judgment record, never an edited calc.

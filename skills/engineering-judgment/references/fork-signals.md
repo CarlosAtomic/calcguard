@@ -16,7 +16,7 @@ so they survive an implementer who is confidently wrong. Trust them most.
 | 5 | **Determination handed to you** | the clause states who decides instead of what the answer is, deferring to the implementer — "by rational analysis", "by test", "engineering judgment is required", "by accepted engineering principles" | S240 §E4.5.2 commentary |
 | 6 | **No oracle** | no worked example, no independent tool, no closed form for this branch | §7.6.1, J4.3.1 |
 | 7 | **Cross-table pairing** | two limits from different clauses are combined; is the pair legal? | the 1.43× unconservative pair |
-| 8 | **Edition delta on the path** | more than one edition on file bears on this clause — whether or not a difference is yet known | S2-20 vs S3-22 |
+| 8 | **Edition delta on the path** | material from an edition other than the declared basis is in play for this clause — a worked example, figure, commentary, errata, or value you are reaching for — whether or not a difference is yet known | S2-20 vs S3-22 |
 | 9 | **Outside tested range** | a listing or equation is applied beyond its validated span, thickness, or spacing | Whitmore on CFS plate |
 
 ## Notes on the ones that mislead
@@ -38,8 +38,12 @@ tells you *who decides* instead of *what the answer is*.
 tables and still not be combinable. Mutation testing cannot find this, because every
 mutation is on the wrong axis — it perturbs the values, not the pairing.
 
-**Signal 8 fires on the presence of a second edition, not on a proven difference.** It
-is the trigger to go and diff, and the diff is evidence, not a verdict. A newer edition
+**Signal 8 fires when you reach for another edition, not on a proven difference — and
+not on its mere presence on the shelf.** The library holds many editions of most
+standards; if simple existence tripped this, it would fire on every clause and become
+a tax. The trigger is that something from a non-declared edition is actually in play
+here: a worked example you want to use, a figure you are reading, a commentary, an
+errata. Then go and diff — and the diff is evidence, not a verdict. A newer edition
 does not invalidate the declared one, and is frequently narrower. See `precedence.md`.
 
 **Signal 9 cuts both ways.** Outside the tested range a listing is *silent*, not
