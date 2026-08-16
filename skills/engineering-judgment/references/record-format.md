@@ -15,7 +15,7 @@ Next id: the highest `JR-` in that repo's `docs/judgments/`, plus one. Start at
 id: JR-0001
 clause: AISI S240-20 §E4.5.1
 basis: AISI S100-16 (2020) w/S2-20   # full declared designation, supplement included
-repo: lgs-truss-designer
+repo: <the repo this record lives in — NOT copied from this example>
 commit: <sha at resolution>
 signals: [2, 3]
 verdict: judged                       # determined | judged | insufficient_basis | alternative_means

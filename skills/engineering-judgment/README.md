@@ -20,8 +20,9 @@ decision to you. **The two tools never exchange data.** calcguard is untouched.
 
 - Not a review gate. It has no schedule and nothing to block.
 - Not a sealed-project reviewer. Permit dates, IEBC triggers, load path and
-  constructability are **parked** in `references/parked-project-mode.md` and wired into
-  nothing. A calc engine has no permit date.
+  constructability are **parked** in `docs/parked-sealed-project-review.md` — kept in
+  the repo, deliberately outside the skill so nothing loads it. A calc engine has no
+  permit date.
 - Not a supersession engine. It never ranks editions.
 - Not an editor. It issues a record; you change the code.
 

@@ -91,7 +91,6 @@ research, not authority.
 - `references/precedence.md` — ladder, conservatism rule, edition deltas
 - `references/research-protocol.md` — which command, in which order
 - `references/record-format.md` — record, pin, vault copy
-- `references/parked-project-mode.md` — sealed-project review; **out of scope here**
 - `assets/judgment-record-template.md` — the template
 - `acceptance/forks.md` — the fixtures this skill is tested against
 
