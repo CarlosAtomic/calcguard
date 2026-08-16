@@ -125,7 +125,8 @@ verdict that one edition supersedes another.
 
 ## What comes out
 
-A record at `docs/judgments/JR-NNNN-<slug>.md` **in the repo whose code it governs** —
+A record at `docs/judgments/JR-NNNN-<slug>.md` **in the repo whose code it governs**
+(ids restart per repo, so refer to one as `repo/JR-NNNN` — see `references/record-format.md`) —
 so it shows in the diff and travels with the code:
 
 ```yaml
@@ -156,7 +157,8 @@ explains; the assertion enforces.** A `determined` record needs no pin.
 
 ```bash
 ~/projects/spark-powerhouse/ingest/.venv/bin/kb-note decision \
-  "JR-0001 <title>" --project lgs-truss-designer --source JR-0001 \
+  "lgs-truss-designer/JR-0001 <title>" \
+  --project lgs-truss-designer --source lgs-truss-designer/JR-0001 \
   --tags "judgment,AISI" --body "<resolution>"
 ```
 
@@ -165,7 +167,7 @@ explains; the assertion enforces.** A `determined` record needs no pin.
 Three things to know:
 - `decision` is the right type — an unrecognised type falls back to `Findings`.
 - Find prior judgments with **`llocal rag notes`**, *not* `vault-search`. The catalog
-  indexes PDFs; `JR-` records live in `notes`.
+  indexes PDFs; `JR-` records live in `notes` — qualify the id, that workspace is global across repos.
 - Repo-visible immediately, vault-discoverable after 03:15. For same-day lookup run
   `kb-ingest --source notes` manually.
 

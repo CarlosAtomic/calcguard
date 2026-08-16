@@ -30,7 +30,7 @@ skill vanish.
 
 ## RESUME — in priority order
 
-### 1. `JR-0001` on AISI S100-16 §J4.3.1 — needs Carlos
+### 1. `lgs-truss-designer/JR-0001` on AISI S100-16 §J4.3.1 — needs Carlos
 
 Steps 0-5 are **done and written up** (see README's worked example). Step 6 needs two
 decisions before the record can be written:
@@ -55,7 +55,7 @@ clause text explicit, `connections.py:170-172` correct). Branch selection =
 ### 2. ~~Re-run the three unscored replay cases~~ — DONE 2026-08-16
 
 All ten now score, deterministically: **10 pass, 0 fail, control clean**. No signal is
-UNSCORED. Signals 3,4,5,6 carry REAL evidence (they fired on JR-0001/JR-0002); 1,2,7,8,9
+UNSCORED. Signals 3,4,5,6 carry REAL evidence (they fired on lgs-section-designer/JR-0001 and /JR-0002); 1,2,7,8,9
 are synthetic-only — scored and passing, never yet fired on a fork that happened.
 
 The replay is scripted and repeatable. **Run it on every signal edit:**
@@ -80,7 +80,7 @@ too narrow (a list of artefacts "you are reaching for", which excluded *comparin
 text* and made it fail on its own fixture). The current wording covers consulting an
 edition, comparison included. The reasoning is recorded in `fork-signals.md` itself.
 
-### 5. Still open — JR-0001 on J4.3.1 needs Carlos
+### 5. Still open — `lgs-truss-designer/JR-0001` on J4.3.1 needs Carlos
 
 Unchanged from item 1 above.
 

@@ -8,6 +8,39 @@ decision governs, not this one. It travels with the code and shows in the diff.
 Next id: the highest `JR-` in that repo's `docs/judgments/`, plus one. Start at
 `JR-0001`.
 
+### Numbering is per repo — so always say `repo/JR-NNNN`
+
+Ids restart at `JR-0001` in every repo. `lgs-section-designer/JR-0001` and
+`lgs-truss-designer/JR-0001` are **different records about different clauses**, and
+both are correct.
+
+**Qualify whenever the reference can travel** — prose, commit messages, handoffs,
+memory notes, anything said across repos. Inside a repo's own files (a test docstring,
+that repo's HANDOFF) a bare id is already scoped and fine, though qualifying costs
+nothing and survives being quoted elsewhere.
+
+| write this | not this |
+|---|---|
+| `lgs-section-designer/JR-0001` | ~~`JR-0001`~~ |
+| `lgs-truss-designer/JR-0002` | ~~`JR-0002`~~ |
+
+The `id:` field inside a record stays bare — it is already scoped by the file it lives
+in, and `repo:` names the owner. Qualification is for **referring** to a record from
+anywhere else.
+
+> This rule was earned on 2026-08-16. A pending record for AISI S100-16 §J4.3.1 in
+> `lgs-truss-designer` was discussed as "JR-0001" for a whole session while a different
+> `JR-0001` already existed in `lgs-section-designer`. The result was a confident report
+> that no judgment records existed when two did, and that the skill had never been used
+> when it had been used twice. The collision is guaranteed to recur as more repos gain
+> records — the naming is the cheap fix.
+
+To find every record across all repos:
+
+```bash
+find ~/projects -path '*/docs/judgments/JR-*' | sort
+```
+
 ## Frontmatter
 
 ```yaml
@@ -65,9 +98,9 @@ standard already settles it.
 
 ```bash
 /home/atomicjr/projects/spark-powerhouse/ingest/.venv/bin/kb-note decision \
-  "JR-0001 AISI S240-20 E4.5.1 gusset adjacency" \
+  "lgs-truss-designer/JR-0001 AISI S240-20 E4.5.1 gusset adjacency" \
   --project lgs-truss-designer \
-  --source JR-0001 \
+  --source lgs-truss-designer/JR-0001 \
   --tags "judgment,AISI,S240,gusset" \
   --body "<the resolution and what would change it>"
 ```
