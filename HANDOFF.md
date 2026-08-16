@@ -30,7 +30,7 @@ skill vanish.
 
 ## RESUME — in priority order
 
-### 1. `lgs-truss-designer/JR-0001` on AISI S100-16 §J4.3.1 — needs Carlos
+### 1. ~~`lgs-truss-designer/JR-0001` on §J4.3.1~~ — DONE 2026-08-16, merged 97d706d
 
 Steps 0-5 are **done and written up** (see README's worked example). Step 6 needs two
 decisions before the record can be written:
@@ -80,9 +80,11 @@ too narrow (a list of artefacts "you are reaching for", which excluded *comparin
 text* and made it fail on its own fixture). The current wording covers consulting an
 edition, comparison included. The reasoning is recorded in `fork-signals.md` itself.
 
-### 5. Still open — `lgs-truss-designer/JR-0001` on J4.3.1 needs Carlos
+### 5. Still open from JR-0001's section 7
 
-Unchanged from item 1 above.
+J4.3.1 branch selection has no oracle on the declared edition — acquire **RP-0581**,
+**RP-0630**. And `connection_check()` never applies J4.3.2: a latent trap in a public
+function with no callers in `src/`. A defect, not a fork.
 
 ## Things that will bite you
 
