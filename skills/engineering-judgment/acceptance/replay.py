@@ -82,18 +82,53 @@ def real_records() -> list[tuple[Path, set[int]]]:
 
 
 def record_forks() -> list[tuple[Path, set[int], str]]:
-    """(path, recorded signals, the record's own "The fork" prose).
+    """(path, recorded signals, the record body with the answer stripped).
 
-    Section 1 of a record is written AFTER the resolution is known, so it is
-    useless for asking "can a naive reader detect this fork". It is exactly
-    right for the different question this supports: do the CURRENT signal
-    definitions still cover a case we already judged and pinned in code?
+    The body is written AFTER the resolution is known, so it is useless for
+    asking "can a naive reader detect this fork". It is exactly right for the
+    different question this supports: do the CURRENT signal definitions still
+    cover a case we already judged and pinned in code? For that, the scorer
+    needs the evidence the original judge had.
+
+    Frontmatter IS stripped -- it carries `signals:`, which is the answer.
+
+    Measured 2026-08-16: feeding only section 1 does NOT work. It is a 37-48
+    word QUESTION, and the evidence for signals 4 and 6 lives further down in
+    Research and Not-covered. JR-0001 lost signal 4, JR-0002 lost 4 and 6.
     """
     out = []
     for p, signals in real_records():
-        if m := re.search(r"^## 1\. The fork\s*\n(.+?)(?=\n## )", p.read_text(),
-                          re.M | re.S):
-            out.append((p, signals, " ".join(m.group(1).split())))
+        body = re.sub(r"\A---\n.*?\n---\n", "", p.read_text(), flags=re.S)
+        out.append((p, signals, " ".join(body.split())[:6000]))
+    return out
+
+
+BASELINE = HERE / "record-baseline.json"
+
+
+def load_baseline() -> dict[str, list[int]]:
+    return json.loads(BASELINE.read_text()) if BASELINE.exists() else {}
+
+
+def capture_baseline(model: str) -> dict[str, list[int]]:
+    """Snapshot what THIS scorer fires on each record, right now.
+
+    Deliberately NOT the `signals:` the record's author wrote. That field
+    records what a Claude session judged; asking a different model to
+    reproduce it tests whether two judges agree, which is noise. A snapshot
+    holds the judge fixed so the only variable left is the signal wording --
+    which is the thing a regression is supposed to be about.
+
+    Re-capture ON PURPOSE when signals change for a reason. Never to make a
+    red test green.
+    """
+    out = {}
+    for p, _, body in record_forks():
+        got = score(model, body)
+        if got is None:
+            raise RuntimeError(f"model call failed on {p.name}; refusing to "
+                               f"write a baseline with a hole in it")
+        out[p.name] = sorted(got)
     return out
 
 
@@ -149,6 +184,11 @@ def score(model: str, context: str, timeout: int = 600) -> set[int] | None:
         "prompt": PROMPT.format(table=signals_prompt_table(), context=context),
         "stream": False,
         "keep_alive": "30m",
+        # Greedy decoding. Without this Ollama samples at temperature ~0.8 and
+        # the same fixture returns different signals run to run -- which makes
+        # a snapshot fail spuriously and makes any "the fix worked" claim
+        # indistinguishable from noise. Measured the hard way on 2026-08-16.
+        "options": {"temperature": 0, "seed": 0, "top_p": 1.0},
     }).encode()
     req = urllib.request.Request(OLLAMA, data=body,
                                  headers={"Content-Type": "application/json"})
@@ -169,7 +209,17 @@ def main() -> int:
     ap.add_argument("--model", action="append", required=True,
                     help="repeatable; disagreement between models is data")
     ap.add_argument("--seed", type=int, default=0, help="shuffle seed")
+    ap.add_argument("--capture-baseline", action="store_true",
+                    help="snapshot what fires on each JR record; do this ON PURPOSE")
     a = ap.parse_args()
+
+    if a.capture_baseline:
+        snap = capture_baseline(a.model[0])
+        BASELINE.write_text(json.dumps(snap, indent=2) + "\n")
+        print(f"baseline written to {BASELINE.name} using {a.model[0]}:")
+        for k, v in snap.items():
+            print(f"  {k}: {v}")
+        return 0
 
     cs = cases()
     random.Random(a.seed).shuffle(cs)          # order withheld too

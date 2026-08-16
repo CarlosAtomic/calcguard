@@ -136,19 +136,32 @@ import pytest
 @pytest.mark.skipif(os.environ.get("EJ_REGRESSION") != "1",
                     reason="set EJ_REGRESSION=1 (needs Ollama and a local model)")
 def test_regression_recorded_signals_still_fire():
+    """Does editing a signal change what fires on a judgment already pinned in code?
+
+    Compared against a SNAPSHOT taken with the same scorer, not against the
+    `signals:` the record's author wrote. Asking a different model to reproduce
+    a Claude session's judgement tests whether two judges agree -- noise. The
+    snapshot holds the judge fixed so the only variable is the signal wording.
+    """
     r = _replay_module()
     if not r.ollama_up():
         pytest.skip("Ollama unreachable -- skipped, never a false green")
+    baseline = r.load_baseline()
+    if not baseline:
+        pytest.skip("no baseline captured yet: replay.py --capture-baseline")
     model = os.environ.get("EJ_REGRESSION_MODEL", "deepseek-r1:32b")
-    records = r.record_forks()
-    assert records, "no JR-* records found to regress against"
-    broken = []
-    for path, recorded, fork in records:
-        got = r.score(model, fork)
+    moved = []
+    for path, _recorded, body in r.record_forks():
+        if path.name not in baseline:
+            continue
+        got = r.score(model, body)
         if got is None:
             pytest.skip(f"model call failed on {path.name} -- unscored, not passed")
-        if not recorded <= got:
-            broken.append(f"{path.name}: recorded {sorted(recorded)}, now fires "
-                          f"{sorted(got)}, lost {sorted(recorded - got)}")
-    assert not broken, (
-        "a signal edit left an existing judgment unsupported:\n  " + "\n  ".join(broken))
+        was = set(baseline[path.name])
+        if got != was:
+            moved.append(f"{path.name}: was {sorted(was)}, now {sorted(got)}")
+    assert not moved, (
+        "a signal edit moved what fires on an existing judgment:\n  "
+        + "\n  ".join(moved)
+        + "\n\nIf the change was intended, re-capture: "
+          "replay.py --capture-baseline --model <m>")
