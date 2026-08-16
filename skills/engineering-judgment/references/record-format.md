@@ -97,6 +97,7 @@ standard already settles it.
 ## The vault copy
 
 ```bash
+export KB_NOTES_ROOT=/mnt/nas/Projects/Documents/_vault   # required; kb-note errors without it
 /home/atomicjr/projects/spark-powerhouse/ingest/.venv/bin/kb-note decision \
   "lgs-truss-designer/JR-0001 AISI S240-20 E4.5.1 gusset adjacency" \
   --project lgs-truss-designer \

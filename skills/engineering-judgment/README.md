@@ -156,6 +156,7 @@ explains; the assertion enforces.** A `determined` record needs no pin.
 ### The vault copy
 
 ```bash
+export KB_NOTES_ROOT=/mnt/nas/Projects/Documents/_vault   # required; kb-note errors without it
 ~/projects/spark-powerhouse/ingest/.venv/bin/kb-note decision \
   "lgs-truss-designer/JR-0001 <title>" \
   --project lgs-truss-designer --source lgs-truss-designer/JR-0001 \
