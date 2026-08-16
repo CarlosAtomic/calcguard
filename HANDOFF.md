@@ -52,26 +52,37 @@ Needing no decision: interpolation reading = **Determined** (CS-0125 §J4.3.1 p.
 clause text explicit, `connections.py:170-172` correct). Branch selection =
 **Insufficient basis**; acquisition list = **RP-0581**, **RP-0630**.
 
-### 2. Re-run the three unscored replay cases
+### 2. ~~Re-run the three unscored replay cases~~ — DONE 2026-08-16
 
-⛔ **Signals 2, 4, 8 and 9 have no replay evidence.** FORK-2, FORK-4 and FORK-8 went
-unscored after five dispatches across two models returned no final message — a dispatch
-failure, not a fixture defect. **Signal 8 is the notable gap**: it was narrowed the same
-day (from "another edition is on file" to "material from a non-declared edition is in
-play") and FORK-4 is its only fixture, so that narrowing is unverified.
+All ten now score, deterministically: **10 pass, 0 fail, control clean**. No signal is
+UNSCORED. Signals 3,4,5,6 carry REAL evidence (they fired on JR-0001/JR-0002); 1,2,7,8,9
+are synthetic-only — scored and passing, never yet fired on a fork that happened.
 
-Procedure is in the plan's Task 10. **The withholding rule is not optional** — no
-Receipt column, no case id, no case count, no mention that a control exists, shuffled
-order. Handed the full table an agent scores by matching clause strings.
+The replay is scripted and repeatable. **Run it on every signal edit:**
 
-### 3. Watch the signal 1 / signal 4 seam
+```bash
+curl -s http://localhost:11434/api/generate -d '{"model":"deepseek-r1:32b","prompt":"","keep_alive":"45m"}' >/dev/null
+.venv/bin/python skills/engineering-judgment/acceptance/replay.py --model deepseek-r1:32b
+EJ_REGRESSION=1 .venv/bin/python -m pytest tests/test_skill_acceptance.py -k regression -q
+```
 
-The replay surfaced it: FORK-3 returned `[1,4]` against a declared `[1]`. "The clause
-sends you elsewhere and I haven't gone there" is legitimately both a cross-reference
-body and an unopened artifact. Harmless under "at least" scoring; worth deciding
-whether the two should be disambiguated.
+Takes ~15 min for the ten cases on a 32B reasoning model. Warm the model first.
 
----
+### 3. ~~Watch the signal 1 / signal 4 seam~~ — RETRACTED
+
+It does not reproduce. It came from a scorer that was sampling at temperature ~0.8
+before `score()` pinned `temperature: 0`.
+
+### 4. Signal 8 was wrong in BOTH directions — do not re-tighten it
+
+Too broad first ("another edition is on file" — ambiently true across 4,269 PDFs), then
+too narrow (a list of artefacts "you are reaching for", which excluded *comparing clause
+text* and made it fail on its own fixture). The current wording covers consulting an
+edition, comparison included. The reasoning is recorded in `fork-signals.md` itself.
+
+### 5. Still open — JR-0001 on J4.3.1 needs Carlos
+
+Unchanged from item 1 above.
 
 ## Things that will bite you
 
