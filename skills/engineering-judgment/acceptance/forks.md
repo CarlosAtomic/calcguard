@@ -155,52 +155,65 @@ clause, which is the friction this skill exists to avoid.
 
 ## Replay log
 
-| Date | FORK cases scored | Passed | Control | Notes |
-|---|---|---|---|---|
-| 2026-08-15 | 6 of 9 | 6 of 6 | **clean (`[]`)** | 3 unscored — harness, not content |
+Run it yourself — it is scripted and repeatable:
 
-Conditions: fresh agent per case, cases relabelled and shuffled, case id and case count
-withheld, existence of a control withheld, **Receipt column withheld**, notes sanitised
-of clause numbers, filesystem access forbidden.
+```bash
+.venv/bin/python skills/engineering-judgment/acceptance/replay.py --model deepseek-r1:32b
+```
+
+`replay.py` builds the prompt, so the withholding rule cannot be forgotten: Receipt
+column stripped, case ids dropped, order shuffled.
+
+### 2026-08-16 — deepseek-r1:32b, all ten scored
+
+**9 pass, 1 fail, 0 model errors.** CONTROL-1 returned `[]` under a model that had
+never seen this suite.
 
 | Case | Expected | Returned | |
 |---|---|---|---|
 | FORK-1 | 3 | `[3]` | pass |
-| FORK-3 | 1 | `[1,4]` | pass, over-fires 4 |
+| FORK-2 | 2 | `[2]` | pass — **first ever scored** |
+| FORK-3 | 1 | `[1]` | pass |
+| FORK-4 | 4, 8 | `[1,4]` | **FAIL — signal 8 did not fire** |
 | FORK-5 | 6 | `[6]` | pass |
 | FORK-6 | 3, 6 | `[3,6]` | pass |
-| FORK-7 | 7 | `[7]` | pass |
-| FORK-9 | 5 | `[5,6]` | pass, over-fires 6 |
-| FORK-2 | 2 | — | **unscored** |
-| FORK-4 | 4, 8 | — | **unscored** |
-| FORK-8 | 9 | — | **unscored** |
+| FORK-7 | 7 | `[3,7]` | pass, over-fires 3 |
+| FORK-8 | 9 | `[9]` | pass — **first ever scored** |
+| FORK-9 | 5 | `[5]` | pass |
 | CONTROL-1 | none | `[]` | pass |
 
-**FORK-2, FORK-4 and FORK-8 are unscored.** Five dispatches across two models returned
-no final message for these three specific cases while the other seven answered
-normally. That is a dispatch failure, not a fixture defect — nothing was scored and
-failed. Recorded as unscored rather than assumed to pass.
+**FORK-4 was the finding.** Signal 8 failed to fire on its only fixture — the signal
+narrowed the previous day and flagged then as unverified. The wording was the defect,
+not the case: *"a worked example, figure, commentary, errata, or value you are reaching
+for"* reads as an exhaustive list of things you **borrow**, and FORK-4 is **comparing
+clause text across two editions**, which is neither. Reworded to cover consulting an
+edition, comparison included.
 
-Consequence, stated plainly: **signals 2, 4, 8 and 9 have no replay evidence.** Signal
-8 is the notable gap. It was narrowed on 2026-08-15 after review found the broad form
-would fire on nearly every clause, and FORK-4 is its only fixture, so that narrowing
-is unverified.
+**After the fix, FORK-4 returns `[1,4,8]`** — contains the expected `[4,8]`, over-firing
+1. So signal 8 fires on its own fixture for the first time.
 
-Two over-fires, both defensible rather than sloppy:
+That wording has now been wrong in both directions — too broad (fired on any clause,
+since the vault holds many editions), then too narrow (would not fire on its own case).
+**Neither error was findable by reading it.** The first needed knowing how many editions
+the library holds; the second needed a scorer that did not already know the answer.
 
-- **FORK-3 also returned 4.** "The clause sends you elsewhere for the numbers, and I
-  have not gone there" reads as both a cross-reference body and an unopened artifact.
-  Signals 1 and 4 genuinely overlap whenever the cross-reference target is still
-  unread — a seam in the list, found by replay rather than by inspection.
-- **FORK-9 also returned 6.** "Nothing in the standard draws that boundary" was read as
-  an absent oracle, though the context never mentions worked examples, tools, or closed
-  forms.
+### Standing over-fires
 
-Neither breaks "at least" scoring. Both are worth watching: over-firing on FORK cases
-is the leading indicator of the tax, and what would make it dangerous is the control
-firing. The control is clean.
+- **FORK-3 → 4**, and **FORK-4 → 1**: signals 1 and 4 overlap whenever a cross-reference
+  target is still unread. A real seam, surfaced by replay rather than inspection.
+- **FORK-7 → 3.** Harmless under "at least" scoring; watch it.
 
-**The fixtures were rewritten before this run** (`49048d8`). An earlier scoring pass
-reached 10 of 10 by phrase-matching the signal table's own wording, which proved
-nothing. These results come from contexts that no longer share vocabulary with the
-signals.
+Over-firing on FORK cases is the leading indicator of the tax. What would make it
+dangerous is the control firing, and the control is clean under two different scorers.
+
+### Evidence quality
+
+The fixtures were rewritten (`49048d8`) before any of this, because an earlier pass
+scored 10/10 by phrase-matching the signal table's own wording. These results come from
+contexts that no longer share vocabulary with the signals, scored by a model with no
+access to the answer key.
+
+Signals **3, 4, 5 and 6 additionally carry REAL evidence** — they fired in
+`lgs-section-designer` JR-0001 `[3,4,5]` and JR-0002 `[3,4,6]`. Signals **1, 2, 7, 8, 9
+are synthetic-only**: scored, but never yet fired on a fork that actually happened.
+`tests/test_skill_acceptance.py` prints that label per signal.

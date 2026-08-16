@@ -32,7 +32,7 @@ OLLAMA = "http://localhost:11434/api/generate"
 # Cases the replay has never scored. Emptied by running them -- it is not a
 # list to maintain, it is a debt to pay down. Anything here is UNSCORED, never
 # "passed".
-UNSCORED_CASES = {"FORK-2", "FORK-4", "FORK-8"}
+UNSCORED_CASES: set[str] = set()   # all ten scored 2026-08-16 by deepseek-r1:32b
 
 
 # --------------------------------------------------------------------------- parse
