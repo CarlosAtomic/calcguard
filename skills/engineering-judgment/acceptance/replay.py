@@ -71,13 +71,41 @@ def cases() -> list[tuple[str, set[int], str]]:
     return out
 
 
+def record_key(p: Path) -> str:
+    """Stable identity for a record: ``repo/slug``, with the JR number DROPPED.
+
+    The number is NOT stable. On 2026-08-16 a parallel session renumbered
+    JR-0001-nonsymmetric-global-buckling to JR-0003-... and every baseline key
+    keyed on filename orphaned at once -- the regression then matched zero of
+    twelve records and passed vacuously. The slug survived; the number did not.
+    """
+    repo = p.parents[2].name
+    slug = re.sub(r"^JR-\d+-", "", p.stem)
+    return f"{repo}/{slug}"
+
+
 def real_records() -> list[tuple[Path, set[int]]]:
-    """Every JR-* record on disk, with the signals it recorded."""
-    out = []
-    for p in sorted(Path.home().glob("projects/*/docs/judgments/JR-*.md")):
+    """Every JR-* record on disk, with the signals it recorded.
+
+    Worktrees of the same repo duplicate records; the first path wins so a
+    record is not counted once per checkout.
+    """
+    out, seen = [], set()
+    # MAIN CHECKOUTS FIRST. A worktree holds the same records under a different
+    # directory name, and letting one win attributes a record to a scratch dir
+    # -- which changes its key, which orphans the baseline. A main checkout has
+    # `.git` as a DIRECTORY; a worktree has it as a FILE.
+    found = list(Path.home().glob("projects/*/docs/judgments/JR-*.md")) + \
+            list(Path.home().glob("*/docs/judgments/JR-*.md"))
+    for p in sorted(found, key=lambda q: (not (q.parents[2] / ".git").is_dir(), str(q))):
         head = p.read_text()[:800]
-        if m := re.search(r"^signals: \[(.*?)\]", head, re.M):
-            out.append((p, {int(n) for n in re.findall(r"\d+", m.group(1))}))
+        if not (m := re.search(r"^signals: \[(.*?)\]", head, re.M)):
+            continue
+        slug = re.sub(r"^JR-\d+-", "", p.stem)
+        if slug in seen:
+            continue
+        seen.add(slug)
+        out.append((p, {int(n) for n in re.findall(r"\d+", m.group(1))}))
     return out
 
 
@@ -128,7 +156,7 @@ def capture_baseline(model: str) -> dict[str, list[int]]:
         if got is None:
             raise RuntimeError(f"model call failed on {p.name}; refusing to "
                                f"write a baseline with a hole in it")
-        out[p.name] = sorted(got)
+        out[record_key(p)] = sorted(got)
     return out
 
 
@@ -184,11 +212,19 @@ def score(model: str, context: str, timeout: int = 600) -> set[int] | None:
         "prompt": PROMPT.format(table=signals_prompt_table(), context=context),
         "stream": False,
         "keep_alive": "30m",
-        # Greedy decoding. Without this Ollama samples at temperature ~0.8 and
+        # Greedy decoding. NECESSARY BUT NOT SUFFICIENT -- see below.
+        # Without this Ollama samples at temperature ~0.8 and
         # the same fixture returns different signals run to run -- which makes
         # a snapshot fail spuriously and makes any "the fix worked" claim
         # indistinguishable from noise. Measured the hard way on 2026-08-16.
         "options": {"temperature": 0, "seed": 0, "top_p": 1.0},
+        # ⚠ Reproducibility ALSO needs a quiet Ollama. Measured 2026-08-17: with a
+        # second session holding deepseek-coder:32b resident alongside this model,
+        # the ~900-word record bodies moved between runs while the short fixture
+        # prompts did not. Concurrent requests change batch composition, which
+        # changes float reduction order. Run the record regression when nothing
+        # else is using :11434, and treat a failure during shared load as
+        # inconclusive rather than as a signal edit.
     }).encode()
     req = urllib.request.Request(OLLAMA, data=body,
                                  headers={"Content-Type": "application/json"})

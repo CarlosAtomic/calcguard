@@ -150,16 +150,25 @@ def test_regression_recorded_signals_still_fire():
     if not baseline:
         pytest.skip("no baseline captured yet: replay.py --capture-baseline")
     model = os.environ.get("EJ_REGRESSION_MODEL", "deepseek-r1:32b")
+    keys = {r.record_key(p) for p, _, _ in r.record_forks()}
+    orphaned = set(baseline) - keys
+    assert not orphaned, (
+        f"baseline keys resolve to no record on disk: {sorted(orphaned)}.\n"
+        "A record was renamed, renumbered or deleted. This MUST fail rather than\n"
+        "skip -- a parallel session renumbered records on 2026-08-16, every key\n"
+        "orphaned at once, and the guard silently protected nothing.")
+
     moved = []
     for path, _recorded, body in r.record_forks():
-        if path.name not in baseline:
+        key = r.record_key(path)
+        if key not in baseline:
             continue
         got = r.score(model, body)
         if got is None:
             pytest.skip(f"model call failed on {path.name} -- unscored, not passed")
-        was = set(baseline[path.name])
+        was = set(baseline[key])
         if got != was:
-            moved.append(f"{path.name}: was {sorted(was)}, now {sorted(got)}")
+            moved.append(f"{key}: was {sorted(was)}, now {sorted(got)}")
     assert not moved, (
         "a signal edit moved what fires on an existing judgment:\n  "
         + "\n  ".join(moved)

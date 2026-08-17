@@ -30,61 +30,41 @@ skill vanish.
 
 ## RESUME — in priority order
 
-### 1. ~~`lgs-truss-designer/JR-0001` on §J4.3.1~~ — DONE 2026-08-16, merged 97d706d
+Everything from 2026-08-15/16 is merged and pushed. calcguard, `lgs-truss-designer`
+master `4bb82e8` (full suite green). What is left:
 
-Steps 0-5 are **done and written up** (see README's worked example). Step 6 needs two
-decisions before the record can be written:
+### 1. Signals 7 and 8 have never fired on a real fork
 
-- **φ for the screw-shaft limit state.** J4.3.2 permits determining the resistance
-  factor per **K2.1 (tests)** — a route the engine never engages — and the sentence
-  *"shall be taken as … φ/1.25 ≥ 0.5 (LRFD)"* admits two readings that give different
-  numbers. The engine's flat `PHI_SCREW = 0.50` is the conservative floor, so **no
-  sealed number moves today**; what is wrong is the provenance, which currently reads
-  "we used J4's φ" rather than "we declined a test-based alternative we have no data
-  for". Cross-reference K2.1 has **not been opened** by lgs.
-- **Where `Pnvs` comes from.** J4.3.2 gives no formula and defers to the fastener
-  maker. The engine hard-codes **one** manufacturer's table (Hilti, ESR-2196/ESR-3891)
-  and serves it by designation or diameter. Ladder rung 3: configuration match is a
-  gate, not a preference. Mitigated — `pnvs_for_diameter` takes the **lowest**
-  published value and raises rather than defaulting.
+Coverage as of 2026-08-17: **1,2,3,4,5,6,9 are REAL** — they fired on records that
+actually happened. **7** (cross-table pairing) and **8** (edition delta) are
+SYNTHETIC-ONLY: scored and passing in the replay, never yet triggered by real work.
+`tests/test_skill_acceptance.py` prints the label; it does not fail on the gap.
 
-Needing no decision: interpolation reading = **Determined** (CS-0125 §J4.3.1 p. 113,
-clause text explicit, `connections.py:170-172` correct). Branch selection =
-**Insufficient basis**; acquisition list = **RP-0581**, **RP-0630**.
+Not a defect. Signal 7's receipt is a real 1.43× pairing error that predates the skill,
+so "unexercised" is not "unneeded". It resolves itself as records accumulate.
 
-### 2. ~~Re-run the three unscored replay cases~~ — DONE 2026-08-16
+### 2. J4.3.1 branch selection still has no oracle
 
-All ten now score, deterministically: **10 pass, 0 fail, control clean**. No signal is
-UNSCORED. Signals 3,4,5,6 carry REAL evidence (they fired on lgs-section-designer/JR-0001 and /JR-0002); 1,2,7,8,9
-are synthetic-only — scored and passing, never yet fired on a fork that happened.
+Blocked on documents. `TE-0015` Example 8F sits where all three branches agree — its own
+test file says *"moving the 2.5 threshold to 3.0 leaves this file green."* Acquire
+**RP-0581** and **RP-0630**. Recorded in `lgs-truss-designer/JR-0001` §7. This belongs to
+calcguard, not to judgment.
 
-The replay is scripted and repeatable. **Run it on every signal edit:**
+### 3. Re-run the replay on every signal edit
+
+Scripted, deterministic, repeatable. **Warm the model first** — `qwen3.6` is 23 GB and
+`deepseek-r1:32b` is 20 GB, and Ollama evicts on `keep_alive` expiry.
 
 ```bash
-curl -s http://localhost:11434/api/generate -d '{"model":"deepseek-r1:32b","prompt":"","keep_alive":"45m"}' >/dev/null
+curl -s http://localhost:11434/api/generate \
+  -d '{"model":"deepseek-r1:32b","prompt":"","keep_alive":"45m"}' >/dev/null
 .venv/bin/python skills/engineering-judgment/acceptance/replay.py --model deepseek-r1:32b
 EJ_REGRESSION=1 .venv/bin/python -m pytest tests/test_skill_acceptance.py -k regression -q
 ```
 
-Takes ~15 min for the ten cases on a 32B reasoning model. Warm the model first.
-
-### 3. ~~Watch the signal 1 / signal 4 seam~~ — RETRACTED
-
-It does not reproduce. It came from a scorer that was sampling at temperature ~0.8
-before `score()` pinned `temperature: 0`.
-
-### 4. Signal 8 was wrong in BOTH directions — do not re-tighten it
-
-Too broad first ("another edition is on file" — ambiently true across 4,269 PDFs), then
-too narrow (a list of artefacts "you are reaching for", which excluded *comparing clause
-text* and made it fail on its own fixture). The current wording covers consulting an
-edition, comparison included. The reasoning is recorded in `fork-signals.md` itself.
-
-### 5. Still open from JR-0001's section 7
-
-J4.3.1 branch selection has no oracle on the declared edition — acquire **RP-0581**,
-**RP-0630**. And `connection_check()` never applies J4.3.2: a latent trap in a public
-function with no callers in `src/`. A defect, not a fork.
+~15 min for the ten fixtures on a 32B reasoning model. The regression compares against
+`record-baseline.json`; re-capture with `--capture-baseline` **deliberately** when
+signals change for a reason, never to turn a red test green.
 
 ## Things that will bite you
 
@@ -99,6 +79,19 @@ function with no callers in `src/`. A defect, not a fork.
   via `/api/generate` with `keep_alive`. A killed run is **not** an empty result.
 - **The install is a symlink.** Never replace it with a copy — `reference-library`
   silently diverged that way.
+- **JR numbers are NOT stable.** A parallel session renumbered records on 2026-08-16
+  and every filename-keyed baseline entry orphaned at once — the regression matched
+  **zero of twelve** records and passed vacuously. Identity is now `repo/slug`, the
+  number is dropped, and an orphaned key **fails loudly instead of skipping**. Refer to
+  a record as `repo/JR-NNNN` in prose; never key machinery on the number.
+- **Worktrees duplicate records.** `~/projects/lgs-*` are worktrees of
+  `lgs-truss-designer` holding the same files. The replay de-duplicates by slug and
+  attributes to the main checkout, detected by `.git` being a DIRECTORY rather than a
+  file. Attribution has to be stable or the key moves and the baseline orphans again.
+- **After `git checkout -- <file>`, re-run the tests.** It restores to HEAD, which may
+  predate your own uncommitted work. On 2026-08-16 it silently reverted a fix; the
+  orphan gate then passed and a "fix" commit shipped containing zero source. Restore a
+  mutation by re-applying the inverse edit instead.
 - **This repo is public.** The skill files name AISI clauses and repo names, consistent
   with what the README already discloses. No client data.
 

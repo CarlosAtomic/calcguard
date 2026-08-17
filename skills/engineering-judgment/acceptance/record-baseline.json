@@ -1,10 +1,31 @@
 {
-  "JR-0001-nonsymmetric-global-buckling.md": [
+  "lgs-truss-designer/screw-shaft-shear-pnvs": [
+    1,
+    2,
+    5,
+    9
+  ],
+  "lgs-truss-designer/pnvs-across-manufacturers": [
+    3,
+    5
+  ],
+  "lgs-truss-designer/nonsymmetric-global-buckling": [
     5,
     6
   ],
-  "JR-0002-selecting-the-axis-of-symmetry.md": [
+  "lgs-truss-designer/selecting-the-axis-of-symmetry": [
+    1,
     3,
+    5,
     7
+  ],
+  "lgs-section-designer/screw-design-basis-average": [
+    1,
+    2,
+    5
+  ],
+  "lgs-section-designer/hat-as-a-truss-member": [
+    2,
+    3
   ]
 }
