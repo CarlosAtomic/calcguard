@@ -164,80 +164,65 @@ Run it yourself — it is scripted and repeatable:
 `replay.py` builds the prompt, so the withholding rule cannot be forgotten: Receipt
 column stripped, case ids dropped, order shuffled.
 
-### 2026-08-16 — deepseek-r1:32b, deterministic, all ten scored
+### 2026-08-17 — deepseek-r1:32b, **5 runs per case, majority ≥3/5**
 
-**10 pass, 0 fail, 0 model errors.** CONTROL-1 returned `[]`.
+Quiet machine (no other model resident). Parenthesised = `signal:hits-out-of-5`.
 
-| Case | Expected | Returned | |
-|---|---|---|---|
-| FORK-1 | 3 | `[3]` | pass |
-| FORK-2 | 2 | `[1,2]` | pass, over-fires 1 |
-| FORK-3 | 1 | `[1]` | pass |
-| FORK-4 | 4, 8 | `[4,8]` | pass — exact |
-| FORK-5 | 6 | `[6]` | pass |
-| FORK-6 | 3, 6 | `[3,6]` | pass |
-| FORK-7 | 7 | `[7]` | pass |
-| FORK-8 | 9 | `[9]` | pass |
-| FORK-9 | 5 | `[3,5,6]` | pass, over-fires 3 and 6 |
-| CONTROL-1 | none | `[]` | pass |
+| Case | Expected | Majority | Frequencies | |
+|---|---|---|---|---|
+| FORK-1 | 3 | `[3]` | 3:5 | pass |
+| FORK-2 | 2 | `[2]` | 1:1 2:5 | pass |
+| FORK-3 | 1 | `[1]` | 1:5 | pass |
+| FORK-4 | 4, 8 | `[4,8]` | 4:5 **8:5** | pass |
+| FORK-5 | 6 | `[6]` | 6:5 | pass |
+| FORK-6 | 3, 6 | `[3,6]` | 3:5 6:5 | pass |
+| FORK-7 | 7 | `[7]` | 7:5 | pass |
+| FORK-8 | 9 | `[9]` | 9:5 | pass |
+| FORK-9 | 5 | `[5,6]` | 3:1 5:5 **6:4** | pass, over-fires 6 |
+| CONTROL-1 | none | `[]` | — | **pass, nothing fired in any run** |
 
-**A 10/10 deserves suspicion, so here is why this one is credible.** Two cases
-over-fire, so the scorer is not simply returning the expected set; and the control
-stays dark, which is the case a scorer that pattern-matches everything would light up
-first. The fixtures were also rewritten by an agent kept blind to the signal list
-(`49048d8`) after an earlier pass reached 10/10 by phrase-matching the signal table's
-own wording.
+**10 pass, 0 fail, 0 model errors.**
 
-### ⚠ The first 2026-08-16 run was not reproducible — and neither were its findings
+## ⛔ Retractions — the earlier single-draw results were samples, not measurements
 
-`score()` did not set `temperature`, so Ollama sampled at its ~0.8 default. Every
-number taken before that fix was a single draw from a stochastic decoder. Two
-conclusions drawn from it were wrong:
+`score()` was called **once per case** before 2026-08-17. Ollama is not bitwise
+deterministic on GPU even at `temperature: 0` — non-associative float reduction flips a
+borderline token, and a borderline token flips a signal. Measured on an idle machine:
+the same short fixture returned `[4]` and then `[4,8]` on consecutive calls.
 
-- **FORK-4 "failed" then "passed."** Under sampling it returned `[1,4]`, then
-  `[1,4,8]`. Deterministically it returns `[4,8]` — exact. Signal 8's rewording is
-  real, but the fail/pass transition was partly noise.
-- **The "signals 1 and 4 overlap" seam was noise.** It came from sampled draws and does
-  not reproduce. Retracted.
+Three agreeing draws is not proof either. That was the basis for calling the replay
+"deterministic", and it was wrong.
 
-`score()` now sends `temperature: 0, seed: 0, top_p: 1.0`. Verified: three identical
-calls on FORK-4 all return `[4,8]`.
+**What the 5-run frequencies overturned:**
 
-**The lesson generalises past this repo.** A benchmark whose scorer samples is
-measuring the sampler as much as the thing under test, and it will happily hand you a
-fix that "worked" once.
+| Earlier claim | 5-run reality |
+|---|---|
+| "Signal 8 does not reliably fire" | **8:5** on FORK-4 — fires every run. The rewording works; the lone `[4]` was the outlier |
+| "Signals 1 and 4 overlap whenever the cross-referenced target is unread" — logged as a structural seam | FORK-3 is **1:5** and signal 4 never appeared. **Not a thing.** |
+| "FORK-7 over-fires 3" | 7:5, signal 3 never appeared |
+| "FORK-2 over-fires 1" | 1:**1** of 5 — noise |
+| "10 pass, deterministic" (2026-08-16) | one draw per case; the number happened to hold, the method did not |
 
-### Signal 8, wrong in both directions
+The one **real** over-fire is FORK-9 → signal 6 at **4/5**. Worth watching; the context
+never mentions worked examples, tools or closed forms.
 
-The first draft fired on "another edition is on file" — ambiently true across 4,269
-PDFs, so it would fire on nearly every clause. The correction over-tightened to
-artefacts *"you are reaching for"*, and the replay then caught signal 8 **failing to
-fire on its own fixture**: FORK-4 is *comparing clause text*, which is neither
-borrowing nor on that list. Now reads "consulting an edition… comparison included."
+**With a stochastic scorer, an n=1 finding and an n=1 retraction are equally worthless.
+Both were made here.**
 
-Neither error was findable by reading. The first needed knowing how many editions the
-library holds; the second needed a scorer that did not already know the answer.
+### Why the control result is the load-bearing one
+
+CONTROL-1 fired **nothing across five runs**. A scorer that pattern-matches would light
+the control first, and two FORK cases do carry minority noise (1:1, 3:1) — so the
+instrument is not simply returning the expected set. The negative held while the
+positives wobbled, which is the shape that makes the positives worth something.
 
 ### Evidence quality per signal
 
-Signals **3, 4, 5, 6** additionally carry REAL evidence — they fired in
-`lgs-section-designer` JR-0001 `[3,4,5]` and JR-0002 `[3,4,6]`. Signals **1, 2, 7, 8,
-9** are synthetic-only: scored and passing, but never yet fired on a fork that actually
-happened. `tests/test_skill_acceptance.py` prints that label per signal.
+Signals **3, 4, 5, 6** carry REAL evidence — they fired on records that actually
+happened. **1, 2, 7, 8, 9** are synthetic-only: scored and passing, never yet triggered
+by real work. `tests/test_skill_acceptance.py` prints the label per signal; it does not
+fail on the gap.
 
-### Record regression
+The fixtures were rewritten blind (`49048d8`) before any of this, because an earlier
+pass reached 10/10 by phrase-matching the signal table's own wording.
 
-`record-baseline.json` snapshots what this scorer fires on each JR record. The
-regression asserts that does not move when a signal is edited — **compared against the
-snapshot, not against the `signals:` the record's author wrote**, because asking a
-different model to reproduce a Claude session's judgement tests whether two judges
-agree, which is noise. Holding the judge fixed leaves signal wording as the only
-variable.
-
-Observed failing, deliberately, on 2026-08-16: narrowing signal 3 moved JR-0001 from
-`[5,6]` to `[1,4,5,9]` and JR-0002 from `[3,7]` to `[1]`, and the test reported both.
-A guard never seen failing is an alibi.
-
-```bash
-EJ_REGRESSION=1 .venv/bin/python -m pytest tests/test_skill_acceptance.py -k regression -q
-```

@@ -163,7 +163,7 @@ def test_regression_recorded_signals_still_fire():
         key = r.record_key(path)
         if key not in baseline:
             continue
-        got = r.score(model, body)
+        got, _runs = r.score_n(model, body)
         if got is None:
             pytest.skip(f"model call failed on {path.name} -- unscored, not passed")
         was = set(baseline[key])

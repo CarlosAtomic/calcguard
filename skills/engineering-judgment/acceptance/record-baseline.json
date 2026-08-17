@@ -10,6 +10,9 @@
     5
   ],
   "lgs-truss-designer/nonsymmetric-global-buckling": [
+    1,
+    3,
+    4,
     5,
     6
   ],
@@ -19,13 +22,18 @@
     5,
     7
   ],
-  "lgs-section-designer/screw-design-basis-average": [
+  "lgs-truss-designer/screw-design-basis-average": [
     1,
     2,
+    3,
     5
   ],
-  "lgs-section-designer/hat-as-a-truss-member": [
+  "lgs-truss-designer/hat-as-a-truss-member": [
+    5
+  ],
+  "lgs-truss-designer/built-up-pairs-compression": [
     2,
-    3
+    3,
+    8
   ]
 }

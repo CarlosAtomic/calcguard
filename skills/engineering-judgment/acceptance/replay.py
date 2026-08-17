@@ -16,6 +16,7 @@ Stdlib only. Ollama on :11434.
 from __future__ import annotations
 
 import argparse
+import collections
 import json
 import random
 import re
@@ -71,6 +72,24 @@ def cases() -> list[tuple[str, set[int], str]]:
     return out
 
 
+def _repo_name(root: Path) -> str:
+    """The repo that OWNS this checkout, resolving a worktree to its main repo.
+
+    A worktree's directory name is not its repo. `~/projects/lgs-built-up` is a
+    worktree of lgs-truss-designer, and on 2026-08-17 a new worktree appearing
+    moved a record key from lgs-section-designer/... to lgs-built-up/... and
+    orphaned the baseline a second time. A worktree has `.git` as a FILE reading
+    `gitdir: <main>/.git/worktrees/<name>`; the main repo is the part before it.
+    """
+    g = root / ".git"
+    if g.is_file():
+        txt = g.read_text().strip()
+        if txt.startswith("gitdir:") and "/.git/worktrees/" in txt:
+            main = txt.split(":", 1)[1].strip().split("/.git/worktrees/")[0]
+            return Path(main).name
+    return root.name
+
+
 def record_key(p: Path) -> str:
     """Stable identity for a record: ``repo/slug``, with the JR number DROPPED.
 
@@ -79,9 +98,8 @@ def record_key(p: Path) -> str:
     keyed on filename orphaned at once -- the regression then matched zero of
     twelve records and passed vacuously. The slug survived; the number did not.
     """
-    repo = p.parents[2].name
     slug = re.sub(r"^JR-\d+-", "", p.stem)
-    return f"{repo}/{slug}"
+    return f"{_repo_name(p.parents[2])}/{slug}"
 
 
 def real_records() -> list[tuple[Path, set[int]]]:
@@ -152,7 +170,7 @@ def capture_baseline(model: str) -> dict[str, list[int]]:
     """
     out = {}
     for p, _, body in record_forks():
-        got = score(model, body)
+        got, _runs = score_n(model, body)
         if got is None:
             raise RuntimeError(f"model call failed on {p.name}; refusing to "
                                f"write a baseline with a hole in it")
@@ -240,11 +258,51 @@ def score(model: str, context: str, timeout: int = 600) -> set[int] | None:
     return {int(n) for n in re.findall(r"\d+", hits[-1])}
 
 
+RUNS = 5
+
+
+def score_n(model: str, context: str, n: int = RUNS
+            ) -> tuple[set[int] | None, list[set[int]]]:
+    """Run n times; a signal fires if it appears in a MAJORITY of runs.
+
+    ONE DRAW IS A SAMPLE, NOT A MEASUREMENT. Measured 2026-08-17 on an idle
+    machine: the same short fixture returned [4] and then [4,8] on consecutive
+    calls with temperature 0, seed 0. Ollama is not bitwise deterministic on
+    GPU -- non-associative float reduction is enough to flip a borderline
+    token, and a borderline token flips a signal.
+
+    Three agreeing draws is not proof either. I generalised from n=3, called
+    the replay deterministic, and reported a 10/10 that was a single sample.
+
+    Aggregation is PER SIGNAL, not per result set: exact sets rarely tie, while
+    "does signal 8 fire more often than not" is the question actually being
+    asked.
+    """
+    runs: list[set[int]] = []
+    for _ in range(n):
+        got = score(model, context)
+        if got is None:
+            return None, runs
+        runs.append(got)
+    need = n // 2 + 1
+    counts = collections.Counter(s for r in runs for s in r)
+    return {s for s, c in counts.items() if c >= need}, runs
+
+
+def freq(runs: list[set[int]]) -> str:
+    """`4:5 8:3` -- how many of the runs each signal appeared in."""
+    c = collections.Counter(s for r in runs for s in r)
+    return " ".join(f"{s}:{n}" for s, n in sorted(c.items())) or "-"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--model", action="append", required=True,
                     help="repeatable; disagreement between models is data")
     ap.add_argument("--seed", type=int, default=0, help="shuffle seed")
+    ap.add_argument("--runs", type=int, default=RUNS,
+                    help="samples per case; a signal fires on a MAJORITY. "
+                         "One draw is a sample, not a measurement.")
     ap.add_argument("--capture-baseline", action="store_true",
                     help="snapshot what fires on each JR record; do this ON PURPOSE")
     a = ap.parse_args()
@@ -260,22 +318,24 @@ def main() -> int:
     cs = cases()
     random.Random(a.seed).shuffle(cs)          # order withheld too
 
+    print(f"{a.runs} runs per case; a signal fires on a majority "
+          f"(>={a.runs // 2 + 1}/{a.runs}). Parenthesised = signal:hits.\n")
     print(f"{'case':<11} {'expected':<10} " +
-          " ".join(f"{m[:16]:<17}" for m in a.model))
-    print("-" * (22 + 18 * len(a.model)))
+          " ".join(f"{m[:16]:<34}" for m in a.model))
+    print("-" * (22 + 35 * len(a.model)))
     passes = fails = errs = 0
     for cid, exp, ctx in cs:
         cells, ok_all = [], True
         for m in a.model:
-            got = score(m, ctx)
+            got, runs = score_n(m, ctx, a.runs)
             if got is None:
                 cells.append("ERROR"); ok_all = False; errs += 1; continue
             ok = (got == exp) if not exp else exp <= got     # control: exact
-            cells.append(("+ " if ok else "! ") + str(sorted(got)))
+            cells.append(("+ " if ok else "! ") + f"{sorted(got)} ({freq(runs)})")
             ok_all &= ok
         passes, fails = (passes + 1, fails) if ok_all else (passes, fails + 1)
         print(f"{cid:<11} {str(sorted(exp)):<10} " +
-              " ".join(f"{c:<17}" for c in cells))
+              " ".join(f"{c:<34}" for c in cells))
 
     print(f"\n{passes} pass, {fails} fail, {errs} model error(s)")
     print("A model error is NOT a pass and NOT a fail -- it is an unscored case.")
