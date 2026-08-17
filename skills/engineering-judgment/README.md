@@ -170,7 +170,7 @@ Three things to know:
 - Find prior judgments with **`llocal rag notes`**, *not* `vault-search`. The catalog
   indexes PDFs; `JR-` records live in `notes` — qualify the id, that workspace is global across repos.
 - Repo-visible immediately, vault-discoverable after 03:15. For same-day lookup run
-  `kb-ingest --source notes` manually.
+  `notes-sync.sh` manually.
 
 ---
 

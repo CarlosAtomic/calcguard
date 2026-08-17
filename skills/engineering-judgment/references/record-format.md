@@ -121,8 +121,13 @@ Three facts, not assumptions:
   cross-project lookup, run the sync manually:
 
   ```bash
-  /home/atomicjr/projects/spark-powerhouse/ingest/.venv/bin/kb-ingest --source notes --verbose
+  /home/atomicjr/projects/spark-powerhouse/bin/notes-sync.sh
   ```
+
+  Use the script, not a bare `kb-ingest`. It sources its own environment;
+  `kb-ingest` on its own dies on a missing `KB_SOURCE_ROOT`, and `kb-note` needs
+  `KB_NOTES_ROOT` exported. Verified 2026-08-16: the script promotes Inbox →
+  `Decisions/` and indexes into the `notes` workspace in one step.
 
 `Decisions/` may not exist yet. Verify it after the first promotion rather than
 assuming it appeared.
