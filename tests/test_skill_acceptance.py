@@ -188,7 +188,7 @@ def test_regression_recorded_signals_still_fire():
 #     python skills/engineering-judgment/acceptance/lint_records.py
 # ---------------------------------------------------------------------------
 
-LINT = SKILL / "acceptance" / "lint_records.py"
+LINT = Path(__file__).parent.parent / "src" / "calcguard" / "judgment_lint.py"
 
 GOOD = """---
 id: JR-0001

@@ -19,10 +19,19 @@ does not exist claims an enforcement it does not have, and nothing else notices:
 the suite still passes, the record still LOOKS pinned, and the link is dead.
 Found exactly that on JR-0002, whose pinned test had been renamed.
 
-    python lint_records.py            # every record on disk
-    python lint_records.py <repo>     # one repo
+    python -m calcguard.judgment_lint          # every record on disk
+    python -m calcguard.judgment_lint <repo>   # one repo
 
-Stdlib only. No model calls, so it belongs in a normal test suite.
+Or from a consuming repo's own suite, which is where it belongs -- the records
+live there, and a rename should fail that repo's build, not calcguard's:
+
+    from calcguard.judgment_lint import records, lint
+    for p in records(Path(__file__).parents[1]):
+        assert lint(p) == []
+
+It lives in the PACKAGE rather than beside the skill because calcguard is
+installed as a copy, not editable, so a consuming repo cannot reach the skill
+directory. Stdlib only, no model calls -- it costs nothing in a normal run.
 """
 from __future__ import annotations
 

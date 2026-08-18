@@ -163,8 +163,18 @@ the problem, goes to the sources, and applies existing knowledge. Nothing is inv
 | "Not covered" is filled | the record stays honest |
 
 ```bash
-python skills/engineering-judgment/acceptance/lint_records.py          # every record
-python skills/engineering-judgment/acceptance/lint_records.py <repo>   # one repo
+python -m calcguard.judgment_lint          # every record on disk
+python -m calcguard.judgment_lint <repo>   # one repo
+```
+
+It ships **in the calcguard package**, not beside the skill, because calcguard is
+installed as a copy rather than editable — a consuming repo cannot reach the skill
+directory. Wire it into the suite of the repo that owns the records:
+
+```python
+from calcguard.judgment_lint import records, lint
+for p in records(Path(__file__).parents[1]):
+    assert lint(p) == [], f"{p.name}: {lint(p)}"
 ```
 
 **The pin check is the load-bearing one.** A record whose pin names a test that no
