@@ -1,6 +1,6 @@
 # calcguard — HANDOFF
 
-**Updated:** 2026-08-17. **calcguard master `2a9db5f`**, pushed, 46 passed / 1 skipped.
+**Updated:** 2026-08-18. **calcguard master `cd706ea`**, pushed, 55 passed / 1 skipped.
 
 ---
 
@@ -81,6 +81,40 @@ synthetic-only one and has since fired on real work. Nothing is unexercised.
 | `kb-note` / `kb-ingest` commands in the docs did not run | corrected to `notes-sync.sh`; `KB_NOTES_ROOT` documented |
 
 ---
+
+## Deployed across all three programs, 2026-08-18
+
+| repo | basis | record lint | calcguard physics |
+|---|---|---|---|
+| lgs-truss-designer | ✅ | ✅ 11 records | ✅ in use |
+| CFS_Box | ✅ 6 standards | ✅ | ✅ **wired, and it found a defect** |
+| CFS-PROFILE | ✅ | ✅ | — |
+
+The skill is GLOBAL (symlinked), so judgment already applied everywhere; the enforcement
+half is what landed. `calcguard.judgment_lint` ships **in the package** — calcguard
+installs as a COPY, not editable, so a consuming repo cannot reach `skills/`.
+
+⚠ **Pin calcguard >= `cd706ea`.** CFS_Box and CFS-PROFILE both shipped briefly with a pin
+predating `judgment_lint`, green locally only because their venvs had been upgraded by
+hand. The tests were green and the declaration was broken at the same time.
+
+### What calcguard found on its first run in CFS_Box
+
+```
+sum(w*L) over member loads  =  8.5063 kip
+1.5 x reported total        =  5.1432 kip     +65%
+```
+
+`self_weight_udls`' docstring says the distributed total equals box_weight; the UDLs carry
+member self-weight that `total` does not. **`total` feeds the lifting case, so the reported
+module weight is ~40% LOW — unconservative for crane and rigging selection.** Left
+`xfail(strict=True)`: which number is right is an engineering decision, not a refactor.
+The solver is NOT implicated — `sum(Rz)/sum(w*L)` measured 1.0000.
+
+Two other long-standing CFS_Box failures were diagnosed and are NOT defects: the deck-tie
+test strips ties and makes the model under-braced, so the engine's own stability guard
+correctly refuses; and `test_unknown_combo_raises` is stale, since the function was
+deliberately made graceful.
 
 ## Still to work
 
