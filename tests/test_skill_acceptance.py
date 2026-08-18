@@ -242,11 +242,26 @@ def test_lint_catches_a_DEAD_PIN(tmp_path):
     assert any("PIN IS DEAD" in v for v in _lint_module().lint(p))
 
 
-def test_lint_catches_a_pin_that_names_a_file_not_a_test(tmp_path):
-    p = _fake_repo(tmp_path, GOOD.replace(
-        "pin: tests/test_thing.py::test_the_reading_is_pinned",
-        "pin: tests/test_thing.py"))
-    assert any("does not name a test" in v for v in _lint_module().lint(p))
+def test_a_file_level_pin_is_legal_when_the_file_cites_the_record(tmp_path):
+    """JR-0007 is enforced by seven tests and names the file, not one test.
+
+    Requiring `file::test` flagged that as defective, which it is not. What must
+    hold either way is that the link is real and traceable BOTH ways.
+    """
+    p = _fake_repo(tmp_path,
+                   GOOD.replace("pin: tests/test_thing.py::test_the_reading_is_pinned",
+                                "pin: tests/test_thing.py"),
+                   test_src='"""Pins JR-0001."""\ndef test_a():\n    pass\n')
+    assert _lint_module().lint(p) == []
+
+
+def test_a_file_level_pin_is_caught_when_the_file_never_cites_the_record(tmp_path):
+    """One-way link: the record claims the file, the file has never heard of it."""
+    p = _fake_repo(tmp_path,
+                   GOOD.replace("pin: tests/test_thing.py::test_the_reading_is_pinned",
+                                "pin: tests/test_thing.py"),
+                   test_src="def test_a():\n    pass\n")
+    assert any("never cites" in v for v in _lint_module().lint(p))
 
 
 def test_lint_catches_an_empty_not_covered(tmp_path):

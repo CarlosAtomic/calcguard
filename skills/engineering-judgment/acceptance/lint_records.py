@@ -69,8 +69,18 @@ def records(root: Path | None = None) -> list[Path]:
     return out
 
 
-def _section(text: str, n: int, title: str) -> str:
-    m = re.search(rf"^##\s*{n}\.\s*{title}(.*?)(?=^##\s|\Z)", text, re.S | re.M)
+def _section(text: str, title: str) -> str:
+    """Body of a section, matched by TITLE not by number.
+
+    Numbers are not stable and MUST NOT be relied on. JR-0007 inserted
+    "`a` -- the undefined input" and JR-0008 inserted "What the code produced",
+    shifting everything after them. An earlier version of this lint keyed on
+    `## 6.` and `## 7.` and reported both records as missing three sections
+    each -- two false positives on the two most thorough records in the set,
+    penalising them precisely for the extra research they contained.
+    """
+    m = re.search(rf"^##\s*\d*\.?\s*{title}.*?$(.*?)(?=^##\s|\Z)",
+                  text, re.S | re.M | re.I)
     return m.group(1).strip() if m else ""
 
 
@@ -90,15 +100,24 @@ def lint(p: Path) -> list[str]:
     # --- the decision is actually held
     pin = (re.search(r"^pin:\s*(.+)$", fm, re.M) or [None, ""])[1].strip()
     if verdict in NEEDS_PIN:
-        if "::" not in pin:
-            bad.append(f"pin does not name a test (`file::test_name`): {pin!r}")
+        # A pin may name one test OR a whole file of them -- JR-0007 is enforced
+        # by seven tests and names the file. Requiring `file::test` flagged that
+        # as defective, which it is not. What must hold either way is that the
+        # link is REAL and traceable BOTH ways: the target exists, and it cites
+        # the record back.
+        rid = (re.search(r"^id:\s*(\S+)", fm, re.M) or [None, ""])[1].strip()
+        tf = p.parents[2] / (pin.split("::", 1)[0] if "::" in pin else pin)
+        if not tf.exists():
+            bad.append(f"pin names a path that does not exist: {tf.name}")
         else:
-            f, name = pin.split("::", 1)
-            tf = p.parents[2] / f
-            if not tf.exists():
-                bad.append(f"pin names a file that does not exist: {f}")
-            elif not re.search(rf"^\s*def {re.escape(name.strip())}\s*\(", tf.read_text(), re.M):
-                bad.append(f"PIN IS DEAD — {tf.name} has no `def {name.strip()}`")
+            src = tf.read_text()
+            if "::" in pin:
+                name = pin.split("::", 1)[1].strip()
+                if not re.search(rf"^\s*def {re.escape(name)}\s*\(", src, re.M):
+                    bad.append(f"PIN IS DEAD — {tf.name} has no `def {name}`")
+            elif rid and rid not in src:
+                bad.append(f"pin names a whole file, but {tf.name} never cites {rid} "
+                           f"— the link is one-way and unverifiable")
 
     # --- evidence that the research loop ran
     # A citation SHAPE, not merely the word "edition" -- which appears in the
@@ -112,13 +131,13 @@ def lint(p: Path) -> list[str]:
         bad.append("no citation shape (§, p. N, ESR-N, S100-16, CS-0125) — "
                    "was a source actually opened?")
 
-    if verdict == "judged" and len(_section(text, 3, "Candidate readings").split()) < 20:
+    if verdict == "judged" and len(_section(text, "Candidate readings").split()) < 20:
         bad.append("`judged` but no candidate readings — a choice implies alternatives")
 
-    if len(_section(text, 6, "What would change this").split()) < 10:
+    if len(_section(text, "What would change this").split()) < 10:
         bad.append("`What would change this` is empty — the premises are not falsifiable")
 
-    if len(_section(text, 7, "Not covered").split()) < 10:
+    if len(_section(text, "Not covered").split()) < 10:
         bad.append("`Not covered` is empty — mandatory; it is what keeps a record honest")
 
     return bad
