@@ -142,3 +142,39 @@ ls ~/projects/*/docs/judgments/ 2>/dev/null
 ```
 
 A fork resolved once should never be re-litigated.
+
+
+---
+
+## The lint — did the research actually happen?
+
+A record is a **learning artifact**. Its value is the research it forced, not the
+paperwork it produced. The engine does not guess and does not give up: it reformulates
+the problem, goes to the sources, and applies existing knowledge. Nothing is invented.
+
+`acceptance/lint_records.py` checks for evidence of that loop:
+
+| Check | What it means |
+|---|---|
+| the pin resolves to a **real** `def test_…` | the decision is actually held |
+| a citation **shape** — `§`, `p. N`, `ESR-N`, `S100-16`, `CS-0125` | a source was opened |
+| `judged` records enumerate candidate readings | the problem was reformulated |
+| "What would change this" is filled | the premises are falsifiable |
+| "Not covered" is filled | the record stays honest |
+
+```bash
+python skills/engineering-judgment/acceptance/lint_records.py          # every record
+python skills/engineering-judgment/acceptance/lint_records.py <repo>   # one repo
+```
+
+**The pin check is the load-bearing one.** A record whose pin names a test that no
+longer exists claims an enforcement it does not have, and nothing else notices — the
+suite still passes and the record still *looks* pinned. Found exactly that on
+`lgs-truss-designer/JR-0002`, whose pinned test had been renamed.
+
+**Run it in the repo that owns the records**, not in calcguard. calcguard unit-tests the
+lint itself; making its suite depend on another repo's record state would turn it red
+for something it cannot fix.
+
+`verdict: draft` is legal — research done, code has not moved. A draft needs no pin and
+must not be cited as settled.

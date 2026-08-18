@@ -174,3 +174,104 @@ def test_regression_recorded_signals_still_fire():
         + "\n  ".join(moved)
         + "\n\nIf the change was intended, re-capture: "
           "replay.py --capture-baseline --model <m>")
+
+
+# ---------------------------------------------------------------------------
+# Record lint. A judgment record is a LEARNING ARTIFACT -- its value is the
+# research it forced. These check for evidence of that loop, and above all that
+# the decision is actually HELD: a pin naming a test that does not exist claims
+# an enforcement it does not have, and nothing else notices.
+#
+# Deliberately unit-tested on synthetic records rather than scanning real ones.
+# Scanning would turn calcguard's suite red for a malformed record in another
+# repo, which calcguard cannot fix. Run the full scan explicitly:
+#     python skills/engineering-judgment/acceptance/lint_records.py
+# ---------------------------------------------------------------------------
+
+LINT = SKILL / "acceptance" / "lint_records.py"
+
+GOOD = """---
+id: JR-0001
+verdict: judged
+signals: [2, 5]
+pin: tests/test_thing.py::test_the_reading_is_pinned
+---
+
+## 1. The fork
+Something the standard does not settle.
+
+## 3. Candidate readings
+Reading A gives one number and reading B gives another; A is the conservative
+one because it minimises over a superset of the same terms.
+
+## 4. Research
+AISI S100-16 §J4.3.2, CS-0125 p. 141, and ESR-1271.
+
+## 6. What would change this
+A project that specifies its fastener, or a published value below the minimum.
+
+## 7. Not covered
+The branch selection has no oracle on the declared edition and is not settled
+by this record.
+"""
+
+
+def _lint_module():
+    spec = importlib.util.spec_from_file_location("lint_records", LINT)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _fake_repo(tmp_path, body, test_src="def test_the_reading_is_pinned():\n    pass\n"):
+    (tmp_path / "docs" / "judgments").mkdir(parents=True)
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_thing.py").write_text(test_src)
+    p = tmp_path / "docs" / "judgments" / "JR-0001-a-slug.md"
+    p.write_text(body)
+    return p
+
+
+def test_lint_passes_a_well_formed_record(tmp_path):
+    assert _lint_module().lint(_fake_repo(tmp_path, GOOD)) == []
+
+
+def test_lint_catches_a_DEAD_PIN(tmp_path):
+    """The load-bearing check. Found this on a real record whose test was renamed."""
+    p = _fake_repo(tmp_path, GOOD, test_src="def test_something_else():\n    pass\n")
+    assert any("PIN IS DEAD" in v for v in _lint_module().lint(p))
+
+
+def test_lint_catches_a_pin_that_names_a_file_not_a_test(tmp_path):
+    p = _fake_repo(tmp_path, GOOD.replace(
+        "pin: tests/test_thing.py::test_the_reading_is_pinned",
+        "pin: tests/test_thing.py"))
+    assert any("does not name a test" in v for v in _lint_module().lint(p))
+
+
+def test_lint_catches_an_empty_not_covered(tmp_path):
+    p = _fake_repo(tmp_path, GOOD[:GOOD.index("## 7. Not covered")] + "## 7. Not covered\n")
+    assert any("Not covered" in v for v in _lint_module().lint(p))
+
+
+def test_lint_catches_a_judged_record_with_no_candidate_readings(tmp_path):
+    body = re.sub(r"## 3\. Candidate readings.*?(?=## 4\.)", "## 3. Candidate readings\n\n",
+                  GOOD, flags=re.S)
+    assert any("candidate readings" in v for v in _lint_module().lint(_fake_repo(tmp_path, body)))
+
+
+def test_lint_catches_a_record_with_no_citation(tmp_path):
+    body = GOOD.replace("AISI S100-16 §J4.3.2, CS-0125 p. 141, and ESR-1271.", "We looked at it.")
+    assert any("no citation" in v for v in _lint_module().lint(_fake_repo(tmp_path, body)))
+
+
+def test_lint_rejects_an_unknown_verdict(tmp_path):
+    p = _fake_repo(tmp_path, GOOD.replace("verdict: judged", "verdict: probably_fine"))
+    assert any("is not one of" in v for v in _lint_module().lint(p))
+
+
+def test_a_draft_is_legal_and_needs_no_pin(tmp_path):
+    """Research done, code has not moved. Legitimate -- but not settled."""
+    body = GOOD.replace("verdict: judged", "verdict: draft").replace(
+        "pin: tests/test_thing.py::test_the_reading_is_pinned", "pin: (none yet)")
+    assert _lint_module().lint(_fake_repo(tmp_path, body)) == []
