@@ -1,6 +1,7 @@
 """Executable physics assertions for engineering calculation programs."""
 from .errors import CalcGuardError
 from .reference import ComparisonTable, compare_to_reference
+from .runtime import require_within
 from .tier1 import (assert_bounded_both_sides, assert_coverage,
                     assert_matches_closed_form, assert_monotonic, assert_scales,
                     assert_schema_matches_capability, assert_signed)
@@ -14,4 +15,5 @@ __all__ = [
     "assert_schema_matches_capability",
     "assert_equilibrium", "assert_free_boundary_carries_nothing",
     "compare_to_reference", "ComparisonTable",
+    "require_within",
 ]
