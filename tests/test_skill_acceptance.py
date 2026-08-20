@@ -223,8 +223,16 @@ def _lint_module():
     return mod
 
 
-def _fake_repo(tmp_path, body, test_src="def test_the_reading_is_pinned():\n    pass\n"):
+MANIFEST = ("id,title,filename\n"
+            "CS-0125,AISI S100-16 (2020) w/S2-20: North American Specification,s100-16.pdf\n"
+            "CS-0528,Welded Box-Beam Flexure Design,tn-g104-14.pdf\n")
+
+
+def _fake_repo(tmp_path, body, test_src="def test_the_reading_is_pinned():\n    pass\n",
+               *, manifest=MANIFEST):
     (tmp_path / "docs" / "judgments").mkdir(parents=True)
+    if manifest is not None:
+        (tmp_path / "docs" / "judgments" / "cited-ids.csv").write_text(manifest)
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests" / "test_thing.py").write_text(test_src)
     p = tmp_path / "docs" / "judgments" / "JR-0001-a-slug.md"
@@ -289,4 +297,62 @@ def test_a_draft_is_legal_and_needs_no_pin(tmp_path):
     """Research done, code has not moved. Legitimate -- but not settled."""
     body = GOOD.replace("verdict: judged", "verdict: draft").replace(
         "pin: tests/test_thing.py::test_the_reading_is_pinned", "pin: (none yet)")
+    assert _lint_module().lint(_fake_repo(tmp_path, body)) == []
+
+
+# ---------------------------------------------------------------------------
+# Vault citation checks. A citation was only ever validated by SHAPE: the regex
+# accepted `CS-0125` without ever asking whether CS-0125 exists or is the
+# document the record claims. Two real records cited IDs that a Vault renumber
+# had moved (CS-0726 -> CS-0730, CS-0728 -> CS-0731) and the lint called them
+# clean, because a dead pointer and a live one are the same shape.
+# ---------------------------------------------------------------------------
+
+
+def test_a_cited_id_missing_from_the_manifest_is_caught(tmp_path):
+    """A Vault renumber leaves the record pointing at nothing. This is the defect
+    found on JR-0002 and JR-0005, which the shape check passed."""
+    p = _fake_repo(tmp_path, GOOD.replace("CS-0125 p. 141", "CS-0726 p. 141"))
+    assert any("CS-0726" in v for v in _lint_module().lint(p))
+
+
+def test_a_document_that_is_not_what_the_record_claims_is_caught(tmp_path):
+    """The fabricated-title failure: a real ID cited for a standard it is not."""
+    p = _fake_repo(tmp_path, GOOD.replace("AISI S100-16 §J4.3.2, CS-0125 p. 141, and ESR-1271.",
+                                          "ACI 318-19 §22.5, CS-0125 p. 141."))
+    assert any("318-19" in v for v in _lint_module().lint(p))
+
+
+def test_a_line_naming_several_standards_passes_when_one_matches(tmp_path):
+    """GOOD's research line names S100-16 AND ESR-1271 beside CS-0125. Requiring
+    every designation to match the title would fail a correct record."""
+    assert _lint_module().lint(_fake_repo(tmp_path, GOOD)) == []
+
+
+def test_a_record_citing_vault_ids_demands_a_manifest(tmp_path):
+    """Absent manifest must be LOUD. A silent skip is a guard that never fires."""
+    p = _fake_repo(tmp_path, GOOD, manifest=None)
+    assert any("cited-ids.csv" in v for v in _lint_module().lint(p))
+
+
+def test_a_record_citing_no_vault_ids_needs_no_manifest(tmp_path):
+    """Not every record leans on the Vault; those must not be forced to carry one."""
+    body = GOOD.replace("AISI S100-16 §J4.3.2, CS-0125 p. 141, and ESR-1271.",
+                        "AISI S100-16 §J4.3.2, read from the printed standard.")
+    assert _lint_module().lint(_fake_repo(tmp_path, body, manifest=None)) == []
+
+
+def test_a_record_id_is_not_mistaken_for_a_vault_id(tmp_path):
+    """JR-0001 matches the two-letter/four-digit shape and must not be looked up."""
+    body = GOOD.replace("AISI S100-16 §J4.3.2, CS-0125 p. 141, and ESR-1271.",
+                        "Supersedes JR-0004. AISI S100-16 §J4.3.2, CS-0125 p. 141.")
+    assert _lint_module().lint(_fake_repo(tmp_path, body)) == []
+
+
+def test_a_designation_carried_only_by_the_filename_still_matches(tmp_path):
+    """CS-0528 and CS-0432 share the title "Welded Box-Beam Flexure Design"; only
+    the filename says which edition. Matching on title alone failed JR-0008 and
+    JR-0009 -- the two records that had been most careful about the edition."""
+    body = GOOD.replace("AISI S100-16 §J4.3.2, CS-0125 p. 141, and ESR-1271.",
+                        "CFSEI Tech Note G104-14, `CS-0528` p. 3.")
     assert _lint_module().lint(_fake_repo(tmp_path, body)) == []

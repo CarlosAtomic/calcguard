@@ -12,6 +12,7 @@ So this checks for EVIDENCE OF THAT LOOP, not just formatting:
   reformulation happened -> `judged` records enumerate candidate readings
   premises are stated    -> "What would change this" is filled in
   honesty is preserved   -> "Not covered" is filled in
+  the source is REAL     -> each Vault id resolves, and is the document claimed
   the decision is held   -> the pin resolves to a REAL test
 
 The last one is the load-bearing check. A record whose pin names a test that
@@ -35,6 +36,8 @@ directory. Stdlib only, no model calls -- it costs nothing in a normal run.
 """
 from __future__ import annotations
 
+import csv
+import os
 import re
 import sys
 from pathlib import Path
@@ -93,6 +96,33 @@ def _section(text: str, title: str) -> str:
     return m.group(1).strip() if m else ""
 
 
+# The nine Vault topic codes, enumerated rather than [A-Z]{2} so that a record's
+# own id (JR-0004) and a stray acronym cannot be mistaken for a catalog id.
+VAULT_ID = re.compile(r"\b(?:CS|DG|EB|FR|MF|PM|RP|SA|TE)-\d{4}\b")
+
+# A standard's designation as it is actually written beside a citation:
+# S100-16, S240-20, ESR-1271, ACI 318-19. Checked against every real record --
+# page ranges (`p. 155-156`) and dates (`2026-08-16`) do NOT match, because the
+# trailing digit denies the word boundary.
+DESIGNATION = re.compile(r"\bESR-\d{3,4}\b|\b[A-Z]{1,4}\d{2,4}-\d{2}\b|\b\d{3}-\d{2}\b")
+
+MANIFEST_NAME = "cited-ids.csv"
+
+
+def manifest_of(p: Path) -> dict[str, dict] | None:
+    """`{id: row}` vendored beside the records, or None when there is none.
+
+    Vendored rather than read from the Vault because this lint runs in consuming
+    repos' suites, including CI, where no Vault is mounted. Reading the catalog
+    directly would make the check pass silently everywhere it matters most.
+    """
+    f = p.parent / MANIFEST_NAME
+    if not f.exists():
+        return None
+    with f.open(newline="") as fh:
+        return {r["id"]: r for r in csv.DictReader(fh) if r.get("id")}
+
+
 def lint(p: Path) -> list[str]:
     """Violations for one record. Empty list means clean."""
     text = p.read_text()
@@ -149,11 +179,90 @@ def lint(p: Path) -> list[str]:
     if len(_section(text, "Not covered").split()) < 10:
         bad.append("`Not covered` is empty — mandatory; it is what keeps a record honest")
 
+    # --- the cited document is real, and is the one the record claims
+    #
+    # The shape check above accepts `CS-0125` without asking the Vault anything,
+    # so a renumbered id keeps its shape and the record keeps its green tick.
+    # That is not hypothetical: CS-0726 and CS-0728 had moved to CS-0730 and
+    # CS-0731, and JR-0002 and JR-0005 both linted clean pointing at nothing.
+    ids = sorted(set(VAULT_ID.findall(text)))
+    if ids:
+        man = manifest_of(p)
+        if man is None:
+            bad.append(f"cites {', '.join(ids)} but {MANIFEST_NAME} is missing — run "
+                       f"`python -m calcguard.judgment_lint --refresh <repo>`")
+        else:
+            for vid in ids:
+                if vid not in man:
+                    bad.append(f"{vid} is not in {MANIFEST_NAME} — renumbered, or never on "
+                               f"file. Re-run --refresh; if it stays out, fix the record")
+                    continue
+                # The FILENAME is searched beside the title because the catalog
+                # routinely carries the edition only there: CS-0528 and CS-0432
+                # are both titled "Welded Box-Beam Flexure Design" and are only
+                # told apart by tn-g104-14.pdf vs TechNote-G104-23SEC.pdf. On
+                # title alone this check failed the two records that had been
+                # most careful about which edition they cited.
+                row = man[vid]
+                hay = f"{row.get('title') or ''} {row.get('filename') or ''}".lower()
+                for line in text.splitlines():
+                    if vid not in line:
+                        continue
+                    # One matching designation is enough. A single line often names
+                    # several sources -- GOOD's research line carries S100-16 AND
+                    # ESR-1271 beside one id -- and demanding that all of them match
+                    # would fail correct records for being thorough.
+                    desig = DESIGNATION.findall(line)
+                    if desig and not any(d.lower() in hay for d in desig):
+                        bad.append(f"cites {vid} for {'/'.join(desig)}, but {vid} is "
+                                   f"{row.get('title')!r} — not the document claimed")
+                        break
+
     return bad
 
 
+def refresh(root: Path) -> int:
+    """Regenerate one repo's manifest from the Vault catalog.
+
+    An id that is cited but absent from the catalog is deliberately LEFT OUT
+    rather than written with a placeholder, so the next lint run fails on it.
+    Writing it would launder a dead pointer into a clean tick, which is the
+    exact defect this check exists to catch.
+    """
+    cat = Path(os.environ.get("VAULT_CATALOG", Path.home() / "Vault/_Catalog/catalog.csv"))
+    if not cat.exists():
+        print(f"no Vault catalog at {cat} — set VAULT_CATALOG")
+        return 1
+    rs = records(root)
+    if not rs:
+        print(f"no judgment records under {root}")
+        return 1
+    with cat.open(newline="") as fh:
+        rows = {r["id"]: r for r in csv.DictReader(fh) if r.get("id")}
+    ids = sorted({v for p in rs for v in VAULT_ID.findall(p.read_text())})
+    out = rs[0].parent / MANIFEST_NAME
+    with out.open("w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["id", "title", "filename"])
+        w.writerows([i, rows[i].get("title") or "", rows[i].get("filename") or ""]
+                    for i in ids if i in rows)
+    missing = [i for i in ids if i not in rows]
+    print(f"wrote {out} — {len(ids) - len(missing)} of {len(ids)} cited ids")
+    for i in missing:
+        print(f"    ✗ {i} is cited but NOT in the catalog — left out deliberately")
+    return 0
+
+
 def main() -> int:
-    root = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else None
+    argv = sys.argv[1:]
+    do_refresh = "--refresh" in argv
+    argv = [a for a in argv if a != "--refresh"]
+    root = Path(argv[0]).resolve() if argv else None
+    if do_refresh:
+        if root is None:
+            print("--refresh needs a repo path")
+            return 1
+        return refresh(root)
     rs = records(root)
     if not rs:
         print("no judgment records found")
