@@ -1,7 +1,7 @@
 # HANDOFF — the runtime tier, and whether calcguard should have one
 
-**Started:** 2026-08-19 · **Status:** ⚠ built, unmerged, **used by nothing**
-**Branch:** `feat/runtime-tier`, 1 commit ahead of master, tree clean
+**Started:** 2026-08-19 · **Status:** ✅ **KEPT and MERGED 2026-08-21** (Carlos) — still used by nothing
+**Branch:** `feat/runtime-tier` → merged to master at `e27a240`, pushed. 68 tests green
 **Commit:** `373f04b` — `require_within`, 6 tests, suite 61 passed / 1 skipped
 
 ---
@@ -87,17 +87,18 @@ and neither was asked. That is the one open fact that could change the answer.
 3. Verify a clean-room install: `pip install .` **without** dev extras, then import the
    engine module. That is the check that would have caught the ImportError.
 
-## If the answer is "park it"
-
-Leave `feat/runtime-tier` unmerged and record the decision here. The branch is registered
-nowhere — check whether this repo has an orphan-branch gate like lgs's `PARKED.md`
-registry; if it does, register it there so it is not rediscovered as an orphan.
+## ~~If the answer is "park it"~~ — not taken
 
 ---
 
 ## Verify criteria
 
-- A decision is recorded here, either way. ❌ open
+- A decision is recorded here, either way. ✅ **KEEP — Carlos, 2026-08-21.** Merged on the
+  discipline `require_within` encodes (both bounds required, non-finite refused first,
+  caller-supplied error type) rather than on present usage.
 - If kept: one real consumer imports `require_within` from engine source, and a
-  no-dev-extras install of that consumer still imports. ❌ open
+  no-dev-extras install of that consumer still imports. ❌ **STILL OPEN — this is the
+  live risk.** Merging did not create a caller. calcguard remains dev-only in all four
+  consumers, so importing it from engine source would still fail a production install.
+  Whoever picks this up: pick the consumer FIRST, and move its pin in the SAME commit.
 - If parked: the branch is registered wherever this repo tracks parked work. ❌ open
