@@ -158,6 +158,19 @@ def test_regression_recorded_signals_still_fire():
         "skip -- a parallel session renumbered records on 2026-08-16, every key\n"
         "orphaned at once, and the guard silently protected nothing.")
 
+    # The mirror of the orphan check, and the one that was missing. A record with
+    # no baseline entry is skipped by the loop below, so it is UNPROTECTED while
+    # the gate reports green. On 2026-08-22 the baseline held 7 keys against 12
+    # records: five judgments -- JR-0008 through JR-0012 -- were covered by
+    # nothing, and no output said so. An uncovered record must be as loud as an
+    # orphaned key; both are the guard not guarding.
+    uncovered = keys - set(baseline)
+    assert not uncovered, (
+        f"{len(uncovered)} of {len(keys)} records have NO baseline entry and are "
+        f"therefore unprotected:\n  " + "\n  ".join(sorted(uncovered)) +
+        "\n\nRe-capture deliberately: replay.py --capture-baseline --model <m>.\n"
+        "NEVER re-capture to turn a red test green -- that moves the target.")
+
     moved = []
     for path, _recorded, body in r.record_forks():
         key = r.record_key(path)
